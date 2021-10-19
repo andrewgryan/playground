@@ -14,8 +14,8 @@
         <script>
             fetch("/data")
     .then(response => response.json())
-    .then(({ hello }) => {
-        document.getElementById("app").innerHTML = hello
+    .then(({ value }) => {
+        document.getElementById("app").innerHTML = value
     })
         </script>
     </body>

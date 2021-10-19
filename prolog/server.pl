@@ -17,5 +17,5 @@ say_hi(_Request) :-
                     [ h1('Hello, World!'), p('A paragraph...') ]).
 
 get_data(_Request) :-
-    reply_json(json([hello='world'])).
+    reply_json(json([value='Hello, World!'])).
 
