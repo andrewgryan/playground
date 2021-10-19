@@ -6,6 +6,7 @@
 
 :- http_handler(root(hello_world), say_hi, []).
 :- http_handler(root(data), get_data, []).
+:- http_handler('/', http_reply_file('index.html', []), []).
 :- http_handler('/prolog.jpg', http_reply_file('static/prolog.jpg', []), []).
 
 server(Port) :-
