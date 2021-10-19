@@ -7,5 +7,5 @@ server(Port) :-
     http_server(http_dispatch, [port(Port)]).
 
 say_hi(_Request) :-
-    format('Content-type: text/plain'),
+    format('Content-type: text/plain~n~n'),
     format('Hello, World!').
