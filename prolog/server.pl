@@ -11,7 +11,7 @@
 :- use_module(factorial).
 
 % Routes
-:- http_handler(root('.'), http_reply_file('index.html', []), []).
+:- http_handler(root('.'), http_reply_file('dist/index.html', []), []).
 :- http_handler(root(data), get_data, []).
 
 % Static file server

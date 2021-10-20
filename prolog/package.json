@@ -1,0 +1,18 @@
+{
+  "name": "prolog",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "react": "^17.0.2",
+    "tailwindcss": "^2.2.17",
+    "vite": "^2.6.10"
+  }
+}
