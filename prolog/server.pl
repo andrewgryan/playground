@@ -9,6 +9,13 @@
 :- http_handler('/', http_reply_file('index.html', []), []).
 :- http_handler('/prolog.jpg', http_reply_file('static/prolog.jpg', []), []).
 
+:- initialization main.
+
+
+main :-
+    server(5000).
+
+
 server(Port) :-
     http_server(http_dispatch, [port(Port)]).
 
