@@ -8,6 +8,7 @@
     <body>
         <div class="flex flex-col space-y-4 justify-between items-center bg-gradient-to-r from-green-400 to-blue-500 h-screen w-screen">
             <div class="text-3xl text-thin">Prolog toys</div>
+            <div id="react-app"></div>
             <img id="img-prolog" alt="">
             <div>
                 <div>Factorial Prolog generator!</div>
@@ -17,6 +18,7 @@
         </div>
         <script type="module">
             import "./style.css"
+            import "./app.jsx"
             import imgUrl from "./static/prolog.jpg"
             document.getElementById("img-prolog").src = imgUrl
         </script>
