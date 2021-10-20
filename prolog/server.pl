@@ -44,6 +44,6 @@ get_data(Request) :-
 get_tictactoe(Request) :-
     http_parameters(Request, [ board(Board, []), move(Move, [ between(0, 8) ]) ]),
     atom_chars(Board, C),
-    make_move(C, Move, X),
+    turn(C, Move, X),
     reply_json(json([board=X, move=Move])).
 
