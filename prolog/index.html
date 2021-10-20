@@ -12,7 +12,8 @@
         <img src="prolog.jpg" alt="">
         <div id="app"></div>
         <script>
-            fetch("/data")
+            const seed = 6
+fetch(`/data?seed=${seed}`)
     .then(response => response.json())
     .then(({ value }) => {
         document.getElementById("app").innerHTML = value

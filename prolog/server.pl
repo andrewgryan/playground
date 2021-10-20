@@ -2,6 +2,7 @@
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_json)).
 :- use_module(library(http/http_path)).
+:- use_module(library(http/http_parameters)).
 :- use_module(library(http/html_write)).
 
 :- use_module(factorial).
@@ -25,7 +26,8 @@ say_hi(_Request) :-
     reply_html_page(title('Hello, World!'),
                     [ h1('Hello, World!'), p('A paragraph...') ]).
 
-get_data(_Request) :-
-    factorial(7,X),
+get_data(Request) :-
+    http_parameters(Request, [seed(Seed, [ between(0, 150) ])]),
+    factorial(Seed,X),
     reply_json(json([value=X])).
 
