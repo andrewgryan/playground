@@ -9,10 +9,12 @@
 
 % Local modules
 :- use_module(factorial).
+:- use_module(tictactoe).
 
 % Routes
 :- http_handler(root('.'), http_reply_file('dist/index.html', []), []).
 :- http_handler(root(data), get_data, []).
+:- http_handler(root(tictactoe), get_tictactoe, []).
 
 % Static file server
 :- multifile http:location/3.
@@ -31,7 +33,17 @@ main :-
 server(Port) :-
     http_server(http_dispatch, [port(Port)]).
 
+% factorial end-point
 get_data(Request) :-
     http_parameters(Request, [seed(Seed, [ between(0, 150) ])]),
     factorial(Seed,X),
     reply_json(json([value=X])).
+
+
+% tic-tac-toe endpoint
+get_tictactoe(Request) :-
+    http_parameters(Request, [ board(Board, []), move(Move, [ between(0, 8) ]) ]),
+    atom_chars(Board, C),
+    make_move(C, Move, X),
+    reply_json(json([board=X, move=Move])).
+
