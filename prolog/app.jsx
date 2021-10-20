@@ -1,13 +1,20 @@
-import React from "react"
+import React, { useState } from "react"
 import ReactDOM from "react-dom"
 
 
 const App = () => {
-    const board = new Array(9).fill("x")
+    const [ board, setBoard ] = useState(new Array(9).fill("b"))
     return (<div class="grid grid-cols-3">{
         board.map((content, i) => {
             const onClick = () => {
-                alert(i)
+                const url = `/tictactoe?move=${i}&board=${board.join('')}`
+                fetch(url)
+                    .then(resp => resp.json())
+                    .then(({ board }) => {
+                        if (typeof board !== "undefined") {
+                            setBoard(board)
+                        }
+                    })
             }
             return <Tile key={ i } onClick={ onClick }>{ content }</Tile>
         })
