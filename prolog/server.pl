@@ -20,7 +20,7 @@
 
 http:location(files, '/assets', []).
 
-:- http_handler(files(.), http_reply_from_files(static, []), [prefix]).
+:- http_handler(files(.), http_reply_from_files('dist/assets', []), [prefix]).
 
 % Start program
 :- initialization main.

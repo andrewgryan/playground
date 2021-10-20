@@ -6,15 +6,22 @@
         <title>Hello, Prolog</title>
     </head>
     <body>
-        <div>
-            A static HTML file.
+        <div class="flex flex-col justify-center items-center bg-gradient-to-r from-blue-200 to-white h-screen w-screen">
+            <div>
+                A static HTML file.
+            </div>
+            <img id="img-prolog" alt="">
+            <div>
+                <div>Factorial Prolog generator!</div>
+                <input type="number" name="factorial" id="factorial" value="7">
+                <div id="app"></div>
+            </div>
         </div>
-        <img src="/assets/prolog.jpg" alt="">
-        <div>
-            <div>Factorial Prolog generator!</div>
-            <input type="number" name="factorial" id="factorial" value="7">
-            <div id="app"></div>
-        </div>
+        <script type="module">
+            import "./style.css"
+            import imgUrl from "./static/prolog.jpg"
+            document.getElementById("img-prolog").src = imgUrl
+        </script>
         <script>
             document.getElementById("factorial").addEventListener("change", ev => {
                 render({ seed: ev.target.value })
