@@ -2,6 +2,7 @@
 :- use_module(library(http/thread_httpd)).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_json)).
+:- use_module(library(http/http_files)).
 :- use_module(library(http/http_path)).
 :- use_module(library(http/http_parameters)).
 :- use_module(library(http/html_write)).
@@ -11,9 +12,17 @@
 
 % Routes
 :- http_handler(root('.'), http_reply_file('index.html', []), []).
-:- http_handler(root('prolog.jpg'), http_reply_file('static/prolog.jpg', []), []).
 :- http_handler(root(data), get_data, []).
 
+% Static file server
+:- multifile http:location/3.
+:- dynamic http:location/3.
+
+http:location(files, '/assets', []).
+
+:- http_handler(files(.), http_reply_from_files(static, []), [prefix]).
+
+% Start program
 :- initialization main.
 
 main :-
