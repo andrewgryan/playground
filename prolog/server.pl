@@ -7,10 +7,9 @@
 
 :- use_module(factorial).
 
-:- http_handler(root(hello_world), say_hi, []).
 :- http_handler(root(data), get_data, []).
-:- http_handler('/', http_reply_file('index.html', []), []).
-:- http_handler('/prolog.jpg', http_reply_file('static/prolog.jpg', []), []).
+:- http_handler(root('.'), http_reply_file('index.html', []), []).
+:- http_handler(root('prolog.jpg'), http_reply_file('static/prolog.jpg', []), []).
 
 :- initialization main.
 
@@ -21,10 +20,6 @@ main :-
 
 server(Port) :-
     http_server(http_dispatch, [port(Port)]).
-
-say_hi(_Request) :-
-    reply_html_page(title('Hello, World!'),
-                    [ h1('Hello, World!'), p('A paragraph...') ]).
 
 get_data(Request) :-
     http_parameters(Request, [seed(Seed, [ between(0, 150) ])]),
