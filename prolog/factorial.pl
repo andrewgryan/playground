@@ -1,3 +1,6 @@
+:- module(factorial, [ factorial/2]).
+
+
 factorial(0, 1).
 
 factorial(N,F) :-

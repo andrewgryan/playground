@@ -4,6 +4,8 @@
 :- use_module(library(http/http_path)).
 :- use_module(library(http/html_write)).
 
+:- use_module(factorial).
+
 :- http_handler(root(hello_world), say_hi, []).
 :- http_handler(root(data), get_data, []).
 :- http_handler('/', http_reply_file('index.html', []), []).
@@ -24,5 +26,6 @@ say_hi(_Request) :-
                     [ h1('Hello, World!'), p('A paragraph...') ]).
 
 get_data(_Request) :-
-    reply_json(json([value='Hello, World!'])).
+    factorial(7,X),
+    reply_json(json([value=X])).
 
