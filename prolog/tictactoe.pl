@@ -1,5 +1,14 @@
-:- module(tictactoe, [ turn/3 ]).
+:- module(tictactoe, [ turn/3, winner/2 ]).
 
+% Winner
+winner(Board, Player) :-
+    win(Board, x),
+    Player = x.
+winner(Board, Player) :-
+    win(Board, o),
+    Player = o.
+winner(_, Player) :-
+    Player = b.
 
 % Win criteria
 win(Board, Player) :- win_diagonal(Board, Player).
