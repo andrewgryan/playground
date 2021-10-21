@@ -16,7 +16,13 @@ const App = () => {
                         }
                     })
             }
-            return <Tile key={ i } onClick={ onClick }>{ content }</Tile>
+            let mark
+            if (content === "b") {
+                mark = ""
+            } else {
+                mark = content
+            }
+            return <Tile key={ i } onClick={ onClick }>{ mark }</Tile>
         })
         }</div>)
 }
