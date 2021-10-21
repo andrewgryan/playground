@@ -7,8 +7,8 @@ const App = () => {
     const [ board, setBoard ] = useState(new Array(9).fill(blank))
     const [ winner, setWinner ] = useState(blank)
     return (
-    <div>
-        { winner !== blank && <div>Winner: { winner }</div> }
+    <div class="bg-white rounded p-2 flex flex-col space-y-2">
+        { winner !== blank && <div class="flex flex-row justify-center items-baseline text-thin">Winner <span class="pl-2 text-xl font-semibold">{ winner }</span></div> }
         <div class="grid grid-cols-3">
             { board.map((content, i) => {
                 const onClick = () => {
@@ -28,7 +28,7 @@ const App = () => {
                 } else {
                     mark = content
                 }
-                return <Tile key={ i } onClick={ onClick }>{ mark }</Tile>
+                return <Tile key={ i } i={ i } onClick={ onClick }>{ mark }</Tile>
             })
             }
         </div>
@@ -36,8 +36,15 @@ const App = () => {
 }
 
 
-const Tile = ({ children, onClick }) => {
-    return <div onClick={ onClick } class="h-6 w-6 bg-white border flex flex-row justify-center items-center">{ children }</div>
+const Tile = ({ children, onClick, i }) => {
+    const classNames = ["h-8 w-8 font-mono text-gray-800 bg-white border-gray-900 flex flex-row justify-center items-center"]
+    if ([6, 7, 8].indexOf(i) === -1) {
+        classNames.push("border-b")
+    }
+    if ([2, 5, 8].indexOf(i) === -1) {
+        classNames.push("border-r")
+    }
+    return <div onClick={ onClick } className={ classNames.join(" ") }>{ children }</div>
 }
 
 
