@@ -1,5 +1,5 @@
 -module(useless).
--export([hello_world/0, factorial/1, len/1, repeat/2]).
+-export([hello_world/0, factorial/1, len/1, repeat/2, reverse/1]).
 
 
 % Obligatory Hello, World! function
@@ -23,3 +23,9 @@ len([_|T], N) -> len(T, N+1).
 repeat(V, N) -> repeat(V, N, []).
 repeat(_, 0, Acc) -> Acc;
 repeat(V, N, Acc) when N > 0 -> repeat(V, N - 1, [V | Acc]).
+
+
+% Reverse
+reverse(L) -> reverse(L, []).
+reverse([], Acc) -> Acc;
+reverse([H|T], Acc) -> reverse(T, [H|Acc]).
