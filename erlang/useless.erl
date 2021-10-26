@@ -8,8 +8,10 @@ hello_world() ->
 
 
 % Traditional factorial function
-factorial(0) -> 1;
-factorial(N) when N > 0 -> N * factorial(N - 1).
+factorial(N) -> factorial(N, 1).
+
+factorial(0, F) -> F;
+factorial(N, F) when N > 0 -> factorial(N - 1, N * F).
 
 
 % Example list length
@@ -17,5 +19,4 @@ len(T) -> len_tail(T, 0).
 
 len_tail([], N) -> N;
 len_tail([_|T], N) -> len_tail(T, N+1).
-
 
