@@ -1,5 +1,5 @@
 -module(useless).
--export([hello_world/0, factorial/1, len/1, repeat/2, reverse/1]).
+-export([hello_world/0, factorial/1, len/1, repeat/2, reverse/1, quicksort/1]).
 
 
 % Obligatory Hello, World! function
@@ -29,3 +29,16 @@ repeat(V, N, Acc) when N > 0 -> repeat(V, N - 1, [V | Acc]).
 reverse(L) -> reverse(L, []).
 reverse([], Acc) -> Acc;
 reverse([H|T], Acc) -> reverse(T, [H|Acc]).
+
+
+% Quicksort
+quicksort([]) -> [];
+quicksort([Pivot|Rest]) ->
+    {Smaller, Larger} = partition(Pivot, Rest, [], []),
+    quicksort(Smaller) ++ [Pivot] ++ quicksort(Larger).
+
+partition(_, [], Smaller, Larger) -> {Smaller, Larger};
+partition(Pivot, [H|T], Smaller, Larger) ->
+    if H =< Pivot -> partition(Pivot, T, [H | Smaller], Larger) ;
+       H > Pivot -> partition(Pivot, T, Smaller, [H | Larger])
+    end.
