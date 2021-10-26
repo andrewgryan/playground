@@ -13,7 +13,9 @@ factorial(N) when N > 0 -> N * factorial(N - 1).
 
 
 % Example list length
-len([]) -> 0;
-len([_|T]) -> 1 + len(T).
+len(T) -> len_tail(T, 0).
+
+len_tail([], N) -> N;
+len_tail([_|T], N) -> len_tail(T, N+1).
 
 
