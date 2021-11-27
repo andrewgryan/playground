@@ -8,9 +8,8 @@
     <body>
         <script type="module">
             import init from "./pkg/hello_world"
-            init().then((exports) => {
-                console.log(exports)
-                exports.greet()
+            init().then(({ add }) => {
+                console.log(add(2, 2))
             })
             
         </script>
