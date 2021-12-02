@@ -1,5 +1,7 @@
 use std::fs;
 
+pub mod day_two;
+
 /// Part 1
 pub fn part_one(depths: Vec<i32>) -> i32 {
     count_increases(depths)
