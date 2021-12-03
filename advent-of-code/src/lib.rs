@@ -1,6 +1,8 @@
 use std::fs;
 
+pub mod day_three;
 pub mod day_two;
+pub mod utils;
 
 /// Part 1
 pub fn part_one(depths: Vec<i32>) -> i32 {
