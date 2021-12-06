@@ -1,156 +1,71 @@
-use crate::utils::read_lines;
+use std::fs;
 
-#[derive(Debug, Clone)]
-enum Cell {
-    Checked(i32),
-    Blank(i32),
-}
-impl Cell {
-    fn checked(&self) -> bool {
-        match self {
-            Cell::Checked(_) => true,
-            Cell::Blank(_) => false,
-        }
-    }
+#[derive(Debug)]
+struct Game {
+    calls: Vec<i32>,
+    boards: Vec<Board>,
 }
 
 #[derive(Debug)]
 struct Board {
-    cells: Vec<Vec<Cell>>,
+    cells: Vec<i32>,
 }
 impl Board {
     fn new() -> Self {
         Self { cells: vec![] }
     }
-    fn add_row(&mut self, row: Vec<i32>) {
-        self.cells.push(row.into_iter().map(Cell::Blank).collect());
+    fn insert_row(&mut self, items: Vec<i32>) {
+        self.cells.extend(items);
     }
     fn len(&self) -> usize {
         self.cells.len()
     }
-    fn mark(&self, call: i32) -> Self {
-        Self {
-            cells: self
-                .cells
-                .iter()
-                .map(|row| {
-                    row.iter()
-                        .map(|cell| match cell {
-                            Cell::Checked(_) => Cell::Checked(call),
-                            Cell::Blank(i) => {
-                                if i == &call {
-                                    Cell::Checked(call)
-                                } else {
-                                    Cell::Blank(call)
-                                }
-                            }
-                        })
-                        .collect()
-                })
-                .collect(),
-        }
-    }
-    fn complete(&self) -> bool {
-        self.check(self.cells.clone()) || self.check(transpose(self.cells.clone()))
-    }
-    fn check(&self, cells: Vec<Vec<Cell>>) -> bool {
-        cells
-            .iter()
-            .any(|row| row.iter().all(|cell| cell.checked()))
-    }
 }
 
-fn transpose<T>(v: Vec<Vec<T>>) -> Vec<Vec<T>>
-where
-    T: Clone,
-{
-    assert!(!v.is_empty());
-    (0..v[0].len())
-        .map(|i| v.iter().map(|inner| inner[i].clone()).collect::<Vec<T>>())
-        .collect()
+impl From<String> for Game {
+    fn from(contents: String) -> Self {
+        let mut lines = contents.split('\n');
+
+        // Parse bingo calls
+        let calls = lines
+            .next()
+            .unwrap()
+            .split(',')
+            .map(|c| c.parse().unwrap())
+            .collect();
+
+        // Parse bingo boards
+        let mut boards = vec![];
+        let mut board = Board::new();
+        for line in lines {
+            if (line.len() == 0) && (board.len() > 0) {
+                boards.push(board);
+                board = Board::new();
+            } else {
+                let row: Vec<i32> = line
+                    .split_whitespace()
+                    .map(|c| c.parse().unwrap())
+                    .collect();
+                board.insert_row(row);
+            }
+        }
+
+        Self { calls, boards }
+    }
 }
 
 pub fn part_one(input_file: &str) -> i32 {
-    let mut lines = read_lines(input_file).into_iter();
+    let contents = fs::read_to_string(input_file).expect("could not open file");
+    let game: Game = contents.into();
+    println!("{:?}", game);
 
-    // Parse Bingo Calls
-    let mut call_line = String::new();
-    match lines.next() {
-        None => (),
-        Some(s) => call_line = s,
-    }
-    let calls = parse_calls(call_line.as_str());
-
-    // Parse Bingo Boards
-    let mut boards = vec![];
-    let mut board = Board::new();
-    for line in lines {
-        if line.len() == 0 {
-            continue;
-        }
-        if board.len() == 5 {
-            boards.push(board);
-            board = Board::new();
-        } else {
-            let row = parse_row(line.as_str());
-            board.add_row(row);
-        }
-    }
-    let mut winner: Option<Board> = None;
-    for call in calls {
-        match winner {
-            None => (),
-            Some(_) => break,
-        }
-        println!("call: {:?}", call);
-        boards = boards
-            .iter()
-            .map(|board| board.mark(call))
-            .collect::<Vec<Board>>()
-            .clone();
-
-        for board in boards {
-            if board.complete() {
-                winner = Some(board);
-            }
-        }
-    }
-    for board in boards {
-        println!("{:?}", board);
-    }
-    println!("{:?}", winner);
     0
-}
-
-fn parse_row(line: &str) -> Vec<i32> {
-    line.split_whitespace()
-        .map(|c| c.parse().unwrap())
-        .collect()
-}
-
-fn parse_calls(line: &str) -> Vec<i32> {
-    line.split(',').map(|c| c.parse().unwrap()).collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
-    fn test_board() {
-        let mut board = Board::new();
-        board.add_row(parse_row("1 2 3 4 5"));
-    }
-
-    #[test]
-    fn test_parse_row_given_extra_white_space() {
-        let actual = parse_row("26 68  3 95 59");
-        assert_eq!(actual, vec![26, 68, 3, 95, 59]);
-    }
-
-    #[test]
-    fn test_parse_calls() {
-        let actual = parse_calls("1,2,3");
-        assert_eq!(actual, vec![1, 2, 3]);
+    fn it_works() {
+        assert!(false);
     }
 }
