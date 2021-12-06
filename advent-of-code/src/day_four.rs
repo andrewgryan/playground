@@ -215,6 +215,21 @@ impl FromStr for Cell {
 pub fn part_one(input_file: &str) -> i32 {
     let contents = fs::read_to_string(input_file).expect("could not open file");
     let mut game: Game = contents.into();
+    let mut solution = 0;
+    for _ in 0..100 {
+        game = game.play();
+
+        if let Some(winner) = game.winner() {
+            solution = winner.secret_code(game.previous_call);
+            break;
+        }
+    }
+    solution
+}
+
+pub fn part_two(input_file: &str) -> i32 {
+    let contents = fs::read_to_string(input_file).expect("could not open file");
+    let mut game: Game = contents.into();
     for _ in 0..100 {
         game = game.play();
 
@@ -223,18 +238,6 @@ pub fn part_one(input_file: &str) -> i32 {
             break;
         }
     }
-    /*
-    for turn in game {
-        if turn.has_winner() {
-            println!("{:?}", turn.winner());
-            break;
-        } else {
-            println!("{:?}", turn);
-            println!("{} no winner yet", turn.calls.len());
-        }
-    }
-    */
-
     0
 }
 
