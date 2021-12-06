@@ -24,6 +24,27 @@ impl Game {
     fn winner(&self) -> Option<&Board> {
         self.boards.iter().find(|board| board.bingo())
     }
+
+    fn winners(&self) -> Vec<Board> {
+        self.boards
+            .iter()
+            .filter(|board| board.bingo())
+            .map(|board| board.clone())
+            .collect::<Vec<Board>>()
+    }
+
+    fn eject_winners(&self) -> Game {
+        Game {
+            previous_call: self.previous_call,
+            boards: self
+                .boards
+                .iter()
+                .filter(|board| !board.bingo())
+                .map(|b| b.clone())
+                .collect(),
+            calls: self.calls.clone(),
+        }
+    }
 }
 
 impl From<String> for Game {
@@ -230,13 +251,15 @@ pub fn part_one(input_file: &str) -> i32 {
 pub fn part_two(input_file: &str) -> i32 {
     let contents = fs::read_to_string(input_file).expect("could not open file");
     let mut game: Game = contents.into();
+    let mut last_winners;
     for _ in 0..100 {
-        game = game.play();
-
-        if let Some(winner) = game.winner() {
-            println!("{:?}", winner.secret_code(game.previous_call));
+        last_winners = game.winners();
+        game = game.eject_winners();
+        if game.boards.len() == 0 {
+            println!("{:?}", last_winners[0].secret_code(game.previous_call));
             break;
         }
+        game = game.play();
     }
     0
 }
