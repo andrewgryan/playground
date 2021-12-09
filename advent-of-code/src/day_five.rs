@@ -47,12 +47,30 @@ impl Line {
             for x in start..(end + 1) {
                 points.insert(Point::new(x, self.start.y));
             }
-        }
-        if self.is_vertical() {
+        } else if self.is_vertical() {
             let start = min(self.start.y, self.end.y);
             let end = max(self.start.y, self.end.y);
             for y in start..(end + 1) {
                 points.insert(Point::new(self.start.x, y));
+            }
+        } else {
+            // Diagonal
+            println!("{:?}", self);
+            let dx: i32;
+            let dy: i32;
+            let n: i32 = (self.end.x - self.start.x).abs();
+            if self.start.x < self.end.x {
+                dx = 1;
+            } else {
+                dx = -1;
+            }
+            if self.start.y < self.end.y {
+                dy = 1;
+            } else {
+                dy = -1;
+            }
+            for i in 0..(n + 1) {
+                points.insert(Point::new(self.start.x + i * dx, self.start.y + i * dy));
             }
         }
         points
@@ -135,7 +153,7 @@ pub fn part_one(input_file: &str) -> i32 {
         full_maze
             .lines
             .iter()
-            .filter(|line| line.is_horizontal() || line.is_vertical())
+            // .filter(|line| line.is_horizontal() || line.is_vertical())
             .map(|line| line.clone())
             .collect::<Vec<Line>>(),
     );
@@ -187,6 +205,25 @@ mod tests {
         expect.insert(Point::new(7, 9));
         expect.insert(Point::new(7, 8));
         expect.insert(Point::new(7, 7));
+        assert_eq!(actual, expect);
+    }
+
+    #[test]
+    fn test_diagonal_line() {
+        let actual = Line::from_coords(1, 1, 3, 3).iter_points();
+        let mut expect = HashSet::new();
+        expect.insert(Point::new(1, 1));
+        expect.insert(Point::new(2, 2));
+        expect.insert(Point::new(3, 3));
+        assert_eq!(actual, expect);
+    }
+    #[test]
+    fn test_diagonal_line_reverse() {
+        let actual = Line::from_coords(3, 3, 1, 1).iter_points();
+        let mut expect = HashSet::new();
+        expect.insert(Point::new(1, 1));
+        expect.insert(Point::new(2, 2));
+        expect.insert(Point::new(3, 3));
         assert_eq!(actual, expect);
     }
 }
