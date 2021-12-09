@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::cmp::{max, min};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::str::FromStr;
 
@@ -38,8 +39,23 @@ impl Line {
             end: Point::new(x2, y2),
         }
     }
-    fn iter_points(&self) -> Vec<Point> {
-        vec![self.start.clone(), self.end.clone()]
+    fn iter_points(&self) -> HashSet<Point> {
+        let mut points = HashSet::new();
+        if self.is_horizontal() {
+            let start = min(self.start.x, self.end.x);
+            let end = max(self.start.x, self.end.x);
+            for x in start..(end + 1) {
+                points.insert(Point::new(x, self.start.y));
+            }
+        }
+        if self.is_vertical() {
+            let start = min(self.start.y, self.end.y);
+            let end = max(self.start.y, self.end.y);
+            for y in start..(end + 1) {
+                points.insert(Point::new(self.start.x, y));
+            }
+        }
+        points
     }
     pub fn is_horizontal(&self) -> bool {
         self.start.y == self.end.y
@@ -124,11 +140,7 @@ pub fn part_one(input_file: &str) -> i32 {
             .collect::<Vec<Line>>(),
     );
 
-    let solution = maze.solve();
-
-    // Print horizontal lines
-    println!("{:?}", solution);
-    0
+    maze.solve() as i32
 }
 
 #[cfg(test)]
@@ -146,5 +158,35 @@ mod tests {
     fn test_line_from_str() {
         let actual: Line = "1,2 -> 3,4".parse().unwrap();
         assert_eq!(actual, Line::from_coords(1, 2, 3, 4));
+    }
+
+    #[test]
+    fn test_line_points() {
+        let actual = Line::from_coords(1, 1, 1, 3).iter_points();
+        let mut expect = HashSet::new();
+        expect.insert(Point::new(1, 1));
+        expect.insert(Point::new(1, 2));
+        expect.insert(Point::new(1, 3));
+        assert_eq!(actual, expect);
+    }
+
+    #[test]
+    fn test_line_points_given_97_to_77() {
+        let actual = Line::from_coords(9, 7, 7, 7).iter_points();
+        let mut expect = HashSet::new();
+        expect.insert(Point::new(9, 7));
+        expect.insert(Point::new(8, 7));
+        expect.insert(Point::new(7, 7));
+        assert_eq!(actual, expect);
+    }
+
+    #[test]
+    fn test_line_points_given_79_to_77() {
+        let actual = Line::from_coords(7, 9, 7, 7).iter_points();
+        let mut expect = HashSet::new();
+        expect.insert(Point::new(7, 9));
+        expect.insert(Point::new(7, 8));
+        expect.insert(Point::new(7, 7));
+        assert_eq!(actual, expect);
     }
 }
