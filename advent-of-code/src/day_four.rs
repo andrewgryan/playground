@@ -263,11 +263,3 @@ pub fn part_two(input_file: &str) -> i32 {
     }
     0
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert!(false);
-    }
-}
