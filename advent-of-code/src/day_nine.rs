@@ -67,6 +67,21 @@ pub struct Neighbourhood {
     neighbours: Vec<u32>,
 }
 
+impl Neighbourhood {
+    pub fn risk_level(&self) -> Option<u32> {
+        match self.neighbours.iter().min() {
+            None => None,
+            Some(v) => {
+                if v > &self.value {
+                    Some(self.value + 1)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
 pub struct CaveMapIterator {
     k: usize,
     cave_map: CaveMap,
@@ -135,7 +150,14 @@ pub fn part_one(input_file: &str) -> u32 {
         .parse()
         .unwrap();
     println!("{}", cave_map);
-    0
+    let mut result = 0;
+    for neighbourhood in cave_map.into_iter() {
+        match neighbourhood.risk_level() {
+            None => continue,
+            Some(level) => result += level,
+        }
+    }
+    result
 }
 
 #[cfg(test)]
@@ -180,6 +202,17 @@ mod tests {
             value: 4,
             neighbours: vec![1, 5, 6],
         });
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn neighbourhood_risk_level() {
+        let neighbourhood = Neighbourhood {
+            value: 1,
+            neighbours: vec![2, 9, 9],
+        };
+        let actual = neighbourhood.risk_level();
+        let expected = Some(2);
         assert_eq!(actual, expected);
     }
 
