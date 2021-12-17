@@ -7,6 +7,15 @@ pub struct CaveMap {
     shape: (usize, usize),
 }
 impl CaveMap {
+    pub fn neighbourhood(&self, i: usize, j: usize) -> Option<Neighbourhood> {
+        match self.get(i, j) {
+            None => None,
+            Some(v) => Some(Neighbourhood {
+                value: *v,
+                neighbours: self.neighbours(i, j),
+            }),
+        }
+    }
     pub fn neighbours(&self, i: usize, j: usize) -> Vec<u32> {
         let mut values = vec![];
         if i > 0 {
@@ -38,6 +47,46 @@ impl CaveMap {
         } else {
             self.data.get(i * &self.shape.1 + j)
         }
+    }
+}
+
+impl IntoIterator for CaveMap {
+    type Item = Neighbourhood;
+    type IntoIter = CaveMapIterator;
+    fn into_iter(self) -> Self::IntoIter {
+        CaveMapIterator {
+            k: 0,
+            cave_map: self,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Neighbourhood {
+    value: u32,
+    neighbours: Vec<u32>,
+}
+
+pub struct CaveMapIterator {
+    k: usize,
+    cave_map: CaveMap,
+}
+
+impl Iterator for CaveMapIterator {
+    type Item = Neighbourhood;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let shape = self.cave_map.shape;
+        let j = self.k % shape.0;
+        let i = (self.k - j) / shape.0;
+        let result;
+        if self.k < (shape.0 * shape.1) {
+            result = self.cave_map.neighbourhood(i, j);
+        } else {
+            result = None;
+        }
+        self.k += 1;
+        result
     }
 }
 
@@ -119,6 +168,18 @@ mod tests {
         let mut actual = cave_map.neighbours(i, j);
         actual.sort();
         expected.sort();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn cave_map_into_iter_neighbourhood() {
+        let cave_map: CaveMap = "123\n456\n678\n".parse().unwrap();
+        let mut iter = cave_map.into_iter();
+        let actual = iter.nth(3);
+        let expected = Some(Neighbourhood {
+            value: 4,
+            neighbours: vec![1, 5, 6],
+        });
         assert_eq!(actual, expected);
     }
 
