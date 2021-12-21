@@ -1,6 +1,20 @@
 use std::fmt;
 use std::str::FromStr;
 
+#[derive(Debug)]
+pub struct Cell {
+    index: (usize, usize),
+    height: u32,
+}
+impl Cell {
+    pub fn new(i: usize, j: usize, height: u32) -> Self {
+        Self {
+            index: (i, j),
+            height,
+        }
+    }
+}
+
 pub struct CaveMap {
     map: String,
     data: Vec<u32>,
@@ -12,30 +26,30 @@ impl CaveMap {
             None => None,
             Some(v) => Some(Neighbourhood {
                 value: *v,
-                neighbours: self.neighbours(i, j),
+                neighbours: self.neighbours(i, j).iter().map(|c| c.height).collect(),
             }),
         }
     }
-    pub fn neighbours(&self, i: usize, j: usize) -> Vec<u32> {
+    pub fn neighbours(&self, i: usize, j: usize) -> Vec<Cell> {
         let mut values = vec![];
         if i > 0 {
             match self.get(i - 1, j) {
                 None => (),
-                Some(v) => values.push(*v),
+                Some(v) => values.push(Cell::new(i - 1, j, *v)),
             }
         }
         match self.get(i, j + 1) {
             None => (),
-            Some(v) => values.push(*v),
+            Some(v) => values.push(Cell::new(i, j + 1, *v)),
         }
         match self.get(i + 1, j) {
             None => (),
-            Some(v) => values.push(*v),
+            Some(v) => values.push(Cell::new(i + 1, j, *v)),
         }
         if j > 0 {
             match self.get(i, j - 1) {
                 None => (),
-                Some(v) => values.push(*v),
+                Some(v) => values.push(Cell::new(i, j - 1, *v)),
             }
         }
         values
@@ -177,7 +191,7 @@ mod tests {
     #[case(1, 1, vec![2, 3])]
     fn cave_map_neighbours_2x2(#[case] i: usize, #[case] j: usize, #[case] expected: Vec<u32>) {
         let cave_map: CaveMap = "12\n34".parse().unwrap();
-        let actual = cave_map.neighbours(i, j);
+        let actual: Vec<u32> = cave_map.neighbours(i, j).iter().map(|c| c.height).collect();
         assert_eq!(actual, expected);
     }
 
@@ -187,7 +201,7 @@ mod tests {
     #[case(0, 0, vec![2, 4])]
     fn cave_map_neighbours_3x3(#[case] i: usize, #[case] j: usize, #[case] mut expected: Vec<u32>) {
         let cave_map: CaveMap = "123\n456\n678\n".parse().unwrap();
-        let mut actual = cave_map.neighbours(i, j);
+        let mut actual: Vec<u32> = cave_map.neighbours(i, j).iter().map(|c| c.height).collect();
         actual.sort();
         expected.sort();
         assert_eq!(actual, expected);
@@ -223,5 +237,12 @@ mod tests {
     fn cave_map_get(#[case] i: usize, #[case] j: usize, #[case] expected: Option<&u32>) {
         let cave_map: CaveMap = "12\n34".parse().unwrap();
         assert_eq!(cave_map.get(i, j), expected);
+    }
+
+    #[test]
+    fn test_cell() {
+        let actual = Cell::new(0, 0, 0);
+        assert_eq!(actual.index, (0, 0));
+        assert_eq!(actual.height, 0);
     }
 }
