@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Cell {
     index: (usize, usize),
     height: u32,
@@ -244,5 +244,13 @@ mod tests {
         let actual = Cell::new(0, 0, 0);
         assert_eq!(actual.index, (0, 0));
         assert_eq!(actual.height, 0);
+    }
+
+    #[test]
+    fn test_cell_dedup() {
+        let mut cells = vec![Cell::new(0, 0, 0), Cell::new(1, 1, 0), Cell::new(0, 0, 0)];
+        cells.sort();
+        cells.dedup();
+        assert_eq!(cells, vec![Cell::new(0, 0, 0), Cell::new(1, 1, 0)]);
     }
 }
