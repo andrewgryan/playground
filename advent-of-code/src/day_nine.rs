@@ -21,12 +21,22 @@ pub struct CaveMap {
     shape: (usize, usize),
 }
 impl CaveMap {
+    pub fn low_points(self) -> Vec<u32> {
+        let mut levels = vec![];
+        for neighbourhood in self.into_iter() {
+            match neighbourhood.risk_level() {
+                None => continue,
+                Some(level) => levels.push(level),
+            }
+        }
+        levels
+    }
     pub fn neighbourhood(&self, i: usize, j: usize) -> Option<Neighbourhood> {
         match self.get(i, j) {
             None => None,
             Some(v) => Some(Neighbourhood {
-                value: *v,
-                neighbours: self.neighbours(i, j).iter().map(|c| c.height).collect(),
+                center: Cell::new(i, j, *v),
+                neighbours: self.neighbours(i, j),
             }),
         }
     }
@@ -77,17 +87,21 @@ impl IntoIterator for CaveMap {
 
 #[derive(Debug, PartialEq)]
 pub struct Neighbourhood {
-    value: u32,
-    neighbours: Vec<u32>,
+    center: Cell,
+    neighbours: Vec<Cell>,
 }
 
 impl Neighbourhood {
     pub fn risk_level(&self) -> Option<u32> {
-        match self.neighbours.iter().min() {
+        match self
+            .neighbours
+            .iter()
+            .min_by(|x, y| x.height.cmp(&y.height))
+        {
             None => None,
-            Some(v) => {
-                if v > &self.value {
-                    Some(self.value + 1)
+            Some(neighbour) => {
+                if &neighbour.height > &self.center.height {
+                    Some(self.center.height + 1)
                 } else {
                     None
                 }
@@ -174,6 +188,19 @@ pub fn part_one(input_file: &str) -> u32 {
     result
 }
 
+pub fn part_two(input_file: &str) -> u32 {
+    println!("{}", input_file);
+    let cave_map: CaveMap = std::fs::read_to_string(input_file)
+        .unwrap()
+        .parse()
+        .unwrap();
+    println!("{}", cave_map);
+    for point in cave_map.low_points() {
+        println!("{}", point);
+    }
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,8 +240,8 @@ mod tests {
         let mut iter = cave_map.into_iter();
         let actual = iter.nth(3);
         let expected = Some(Neighbourhood {
-            value: 4,
-            neighbours: vec![1, 5, 6],
+            center: Cell::new(1, 0, 4),
+            neighbours: vec![Cell::new(0, 0, 1), Cell::new(1, 1, 5), Cell::new(2, 0, 6)],
         });
         assert_eq!(actual, expected);
     }
@@ -222,8 +249,8 @@ mod tests {
     #[test]
     fn neighbourhood_risk_level() {
         let neighbourhood = Neighbourhood {
-            value: 1,
-            neighbours: vec![2, 9, 9],
+            center: Cell::new(1, 0, 1),
+            neighbours: vec![Cell::new(2, 0, 2), Cell::new(1, 1, 9), Cell::new(0, 0, 9)],
         };
         let actual = neighbourhood.risk_level();
         let expected = Some(2);
