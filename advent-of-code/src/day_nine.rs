@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Cell {
     index: (usize, usize),
     height: u32,
@@ -21,15 +21,29 @@ pub struct CaveMap {
     shape: (usize, usize),
 }
 impl CaveMap {
-    pub fn low_points(self) -> Vec<u32> {
-        let mut levels = vec![];
+    /// Find region surrounding low point
+    pub fn basin(&self, i: usize, j: usize) -> Vec<Cell> {
+        println!("{} {}", i, j);
+        let mut cells: Vec<Cell> = vec![];
+        match self.get(i, j) {
+            None => (),
+            Some(v) => cells.push(Cell::new(i, j, *v)),
+        }
+        for cell in self.neighbours(i, j) {
+            cells.push(cell);
+        }
+        cells
+    }
+
+    pub fn low_points(self) -> Vec<Cell> {
+        let mut points = vec![];
         for neighbourhood in self.into_iter() {
-            match neighbourhood.risk_level() {
+            match neighbourhood.low_point() {
                 None => continue,
-                Some(level) => levels.push(level),
+                Some(point) => points.push(*point),
             }
         }
-        levels
+        points
     }
     pub fn neighbourhood(&self, i: usize, j: usize) -> Option<Neighbourhood> {
         match self.get(i, j) {
@@ -102,6 +116,22 @@ impl Neighbourhood {
             Some(neighbour) => {
                 if &neighbour.height > &self.center.height {
                     Some(self.center.height + 1)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+    pub fn low_point(&self) -> Option<&Cell> {
+        match self
+            .neighbours
+            .iter()
+            .min_by(|x, y| x.height.cmp(&y.height))
+        {
+            None => None,
+            Some(neighbour) => {
+                if &neighbour.height > &self.center.height {
+                    Some(&self.center)
                 } else {
                     None
                 }
@@ -196,7 +226,8 @@ pub fn part_two(input_file: &str) -> u32 {
         .unwrap();
     println!("{}", cave_map);
     for point in cave_map.low_points() {
-        println!("{}", point);
+        println!("{:?}", point);
+        // println!("{:?}", cave_map.basin(point.index.0, point.index.1));
     }
     0
 }
@@ -264,6 +295,16 @@ mod tests {
     fn cave_map_get(#[case] i: usize, #[case] j: usize, #[case] expected: Option<&u32>) {
         let cave_map: CaveMap = "12\n34".parse().unwrap();
         assert_eq!(cave_map.get(i, j), expected);
+    }
+
+    #[test]
+    fn cave_map_basin() {
+        let cave_map: CaveMap = "929\n202\n929".parse().unwrap();
+        let actual = cave_map.basin(1, 1);
+        assert_eq!(actual.len(), 5);
+        for cell in vec![Cell::new(1, 1, 0), Cell::new(1, 0, 2)] {
+            assert_eq!(actual.iter().find(|c| c.index == cell.index), Some(&cell));
+        }
     }
 
     #[test]
