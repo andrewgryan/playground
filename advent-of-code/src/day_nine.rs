@@ -24,7 +24,7 @@ impl CaveMap {
     /// Find region surrounding low point
     pub fn basin(&self, index: (usize, usize)) -> Vec<Cell> {
         let (i, j) = index;
-        println!("{} {}", i, j);
+        println!("{:?} {} {}", &self.get_cell(index), i, j);
         let mut cells: Vec<Cell> = vec![];
         match self.get(i, j) {
             None => (),
@@ -89,7 +89,7 @@ impl CaveMap {
     }
 
     pub fn get(&self, i: usize, j: usize) -> Option<&u32> {
-        if &j >= &self.shape.0 {
+        if &j >= &self.shape.1 {
             None
         } else {
             self.data.get(i * &self.shape.1 + j)
@@ -327,7 +327,7 @@ mod tests {
      3987894921
      9856789892
      8767896789
-     9899965678", (0, 9), 9, vec![(0,9), (0,8), (0,7), (0,6)]
+     9899965678", (9, 0), 9, vec![(9,0), (8,0), (7,0), (6,0)]
     )]
     fn cave_map_basin(
         #[case] text: &str,
@@ -337,6 +337,8 @@ mod tests {
     ) {
         let cave_map: CaveMap = text.parse().unwrap();
         let actual = cave_map.basin(index);
+
+        println!("{:?}", actual);
 
         // Check size
         assert_eq!(actual.len(), expected);
@@ -363,14 +365,23 @@ mod tests {
         assert_eq!(cells, vec![Cell::new(0, 0, 0), Cell::new(1, 1, 0)]);
     }
 
-    #[test]
-    fn test_cave_map_new() {
-        let actual: CaveMap = "123
-                               456
-                               789"
-        .parse()
-        .unwrap();
-        assert_eq!(actual.shape, (3, 3));
-        assert_eq!(actual.get(1, 2), Some(&6));
+    #[rstest]
+    #[case(
+    "2199943210
+     3987894921
+     9856789892
+     8767896789
+     9899965678", (9, 0), (10, 5), Some(&0)
+    )]
+    fn test_cave_map_new(
+        #[case] text: &str,
+        #[case] index: (usize, usize),
+        #[case] shape: (usize, usize),
+        #[case] value: Option<&u32>,
+    ) {
+        let actual: CaveMap = text.parse().unwrap();
+        let (i, j) = index;
+        assert_eq!(actual.shape, shape);
+        assert_eq!(actual.get(i, j), value);
     }
 }
