@@ -16,13 +16,14 @@ impl Cell {
 }
 
 pub struct CaveMap {
-    map: String,
+    map: String, // TODO remove this property
     data: Vec<u32>,
     shape: (usize, usize),
 }
 impl CaveMap {
     /// Find region surrounding low point
-    pub fn basin(&self, i: usize, j: usize) -> Vec<Cell> {
+    pub fn basin(&self, index: (usize, usize)) -> Vec<Cell> {
+        let (i, j) = index;
         println!("{} {}", i, j);
         let mut cells: Vec<Cell> = vec![];
         match self.get(i, j) {
@@ -77,6 +78,14 @@ impl CaveMap {
             }
         }
         values
+    }
+
+    pub fn get_cell(&self, index: (usize, usize)) -> Option<Cell> {
+        let (i, j) = index;
+        match self.get(i, j) {
+            None => None,
+            Some(v) => Some(Cell::new(i, j, *v)),
+        }
     }
 
     pub fn get(&self, i: usize, j: usize) -> Option<&u32> {
@@ -227,7 +236,7 @@ pub fn part_two(input_file: &str) -> u32 {
     println!("{}", cave_map);
     for point in cave_map.low_points() {
         println!("{:?}", point);
-        // println!("{:?}", cave_map.basin(point.index.0, point.index.1));
+        // println!("{:?}", cave_map.basin(point.index));
     }
     0
 }
@@ -297,12 +306,44 @@ mod tests {
         assert_eq!(cave_map.get(i, j), expected);
     }
 
-    #[test]
-    fn cave_map_basin() {
-        let cave_map: CaveMap = "929\n202\n929".parse().unwrap();
-        let actual = cave_map.basin(1, 1);
-        assert_eq!(actual.len(), 5);
-        for cell in vec![Cell::new(1, 1, 0), Cell::new(1, 0, 2)] {
+    #[rstest]
+    #[case(
+        "929
+         202
+         929",
+         (1, 1),
+        5,
+        vec![(0,1), (1,0), (1,1), (1,2), (2,1)]
+    )]
+    #[case(
+    "2199943210
+     3987894921
+     9856789892
+     8767896789
+     9899965678", (0, 0), 3, vec![(0,0), (1,0), (0,1)]
+    )]
+    #[case(
+    "2199943210
+     3987894921
+     9856789892
+     8767896789
+     9899965678", (0, 9), 9, vec![(0,9), (0,8), (0,7), (0,6)]
+    )]
+    fn cave_map_basin(
+        #[case] text: &str,
+        #[case] index: (usize, usize),
+        #[case] expected: usize,
+        #[case] indices: Vec<(usize, usize)>,
+    ) {
+        let cave_map: CaveMap = text.parse().unwrap();
+        let actual = cave_map.basin(index);
+
+        // Check size
+        assert_eq!(actual.len(), expected);
+
+        // Check individual cells
+        for index in indices {
+            let cell = cave_map.get_cell(index).unwrap();
             assert_eq!(actual.iter().find(|c| c.index == cell.index), Some(&cell));
         }
     }
@@ -320,5 +361,16 @@ mod tests {
         cells.sort();
         cells.dedup();
         assert_eq!(cells, vec![Cell::new(0, 0, 0), Cell::new(1, 1, 0)]);
+    }
+
+    #[test]
+    fn test_cave_map_new() {
+        let actual: CaveMap = "123
+                               456
+                               789"
+        .parse()
+        .unwrap();
+        assert_eq!(actual.shape, (3, 3));
+        assert_eq!(actual.get(1, 2), Some(&6));
     }
 }
