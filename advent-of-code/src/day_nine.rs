@@ -91,8 +91,10 @@ impl CaveMap {
     pub fn get(&self, i: usize, j: usize) -> Option<&u32> {
         if &j >= &self.shape.1 {
             None
+        } else if &i >= &self.shape.0 {
+            None
         } else {
-            self.data.get(i * &self.shape.1 + j)
+            self.data.get(j * &self.shape.1 + i)
         }
     }
 }
@@ -159,8 +161,8 @@ impl Iterator for CaveMapIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let shape = self.cave_map.shape;
-        let j = self.k % shape.0;
-        let i = (self.k - j) / shape.0;
+        let i = self.k % shape.1;
+        let j = (self.k - i) / shape.1;
         let result;
         if self.k < (shape.0 * shape.1) {
             result = self.cave_map.neighbourhood(i, j);
@@ -199,7 +201,7 @@ impl FromStr for CaveMap {
         Ok(CaveMap {
             map: s.to_string(),
             data,
-            shape: (rows, cols),
+            shape: (cols, rows),
         })
     }
 }
@@ -253,9 +255,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(0, 0, vec![2, 3])]
+    #[case(0, 0, vec![3, 2])]
     #[case(1, 0, vec![1, 4])]
-    #[case(1, 1, vec![2, 3])]
+    #[case(1, 1, vec![3, 2])]
     fn cave_map_neighbours_2x2(#[case] i: usize, #[case] j: usize, #[case] expected: Vec<u32>) {
         let cave_map: CaveMap = "12\n34".parse().unwrap();
         let actual: Vec<u32> = cave_map.neighbours(i, j).iter().map(|c| c.height).collect();
@@ -276,12 +278,16 @@ mod tests {
 
     #[test]
     fn cave_map_into_iter_neighbourhood() {
-        let cave_map: CaveMap = "123\n456\n678\n".parse().unwrap();
+        let cave_map: CaveMap = "123
+                                 456
+                                 678"
+        .parse()
+        .unwrap();
         let mut iter = cave_map.into_iter();
         let actual = iter.nth(3);
         let expected = Some(Neighbourhood {
-            center: Cell::new(1, 0, 4),
-            neighbours: vec![Cell::new(0, 0, 1), Cell::new(1, 1, 5), Cell::new(2, 0, 6)],
+            center: Cell::new(0, 1, 4),
+            neighbours: vec![Cell::new(0, 2, 6), Cell::new(1, 1, 5), Cell::new(0, 0, 1)],
         });
         assert_eq!(actual, expected);
     }
@@ -372,6 +378,13 @@ mod tests {
      9856789892
      8767896789
      9899965678", (9, 0), (10, 5), Some(&0)
+    )]
+    #[case(
+    "2199943210
+     3987894921
+     9856789892
+     8767896789
+     9899965678", (0, 4), (10, 5), Some(&9)
     )]
     fn test_cave_map_new(
         #[case] text: &str,
