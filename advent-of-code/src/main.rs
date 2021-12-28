@@ -1,5 +1,5 @@
-use advent_of_code::day_eight;
+use advent_of_code::day_nine;
 
 fn main() {
-    println!("solution: {}", day_eight::part_two("input-8"));
+    println!("solution: {}", day_nine::part_two("input-9"));
 }
