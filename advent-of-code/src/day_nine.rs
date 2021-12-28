@@ -1,7 +1,8 @@
+use std::collections::HashSet;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Cell {
     index: (usize, usize),
     height: u32,
@@ -15,6 +16,7 @@ impl Cell {
     }
 }
 
+#[derive(Clone)]
 pub struct CaveMap {
     map: String, // TODO remove this property
     data: Vec<u32>,
@@ -22,18 +24,61 @@ pub struct CaveMap {
 }
 impl CaveMap {
     /// Find region surrounding low point
-    pub fn basin(&self, index: (usize, usize)) -> Vec<Cell> {
-        let (i, j) = index;
-        println!("{:?} {} {}", &self.get_cell(index), i, j);
-        let mut cells: Vec<Cell> = vec![];
-        match self.get(i, j) {
-            None => (),
-            Some(v) => cells.push(Cell::new(i, j, *v)),
+    pub fn basin(&self, index: (usize, usize)) -> HashSet<Cell> {
+        // Algorithm
+        // 1. Set border to cell(index) and interior to empty set
+        // 2. Collect neighbourhood of border
+        // 3. Remove duplicate neighbours
+        // 4. Remove interior
+        // 5. Remove peaks (e.g. value == 9)
+        // 6. Repeat steps 2 through 5
+
+        let mut interior: HashSet<Cell> = HashSet::new();
+        let mut border: HashSet<Cell> = HashSet::new();
+        let mut neighbours: HashSet<Cell> = HashSet::new();
+
+        // Initialize border
+        border.insert(self.get_cell(index).unwrap());
+
+        while border.len() > 0 {
+            // Collect unique neighbours
+            neighbours.clear();
+            for cell in border.clone() {
+                println!("cell: {:?}", cell);
+                for neighbour in self.neighbours(cell.index.0, cell.index.1) {
+                    println!("neighbour: {:?}", neighbour);
+                    neighbours.insert(neighbour);
+                }
+            }
+            println!("borders: {} neighbours: {}", border.len(), neighbours.len());
+
+            // Remove interior
+            for cell in neighbours.clone() {
+                if interior.contains(&cell) {
+                    neighbours.remove(&cell);
+                }
+            }
+
+            // Remove peaks
+            for cell in neighbours.clone() {
+                if cell.height == 9 {
+                    neighbours.remove(&cell);
+                }
+            }
+
+            // Add border to interior for next iteration
+            for cell in border.clone() {
+                interior.insert(cell);
+            }
+
+            // Set neighbours as border for next iteration
+            border.clear();
+            for cell in neighbours.clone() {
+                border.insert(cell);
+            }
         }
-        for cell in self.neighbours(i, j) {
-            cells.push(cell);
-        }
-        cells
+
+        interior
     }
 
     pub fn low_points(self) -> Vec<Cell> {
@@ -94,7 +139,7 @@ impl CaveMap {
         } else if &i >= &self.shape.0 {
             None
         } else {
-            self.data.get(j * &self.shape.1 + i)
+            self.data.get((j * &self.shape.0) + i)
         }
     }
 }
@@ -236,8 +281,8 @@ pub fn part_two(input_file: &str) -> u32 {
         .parse()
         .unwrap();
     println!("{}", cave_map);
-    for point in cave_map.low_points() {
-        println!("{:?}", point);
+    for point in cave_map.clone().low_points() {
+        println!("{:?}", cave_map.basin(point.index).len());
         // println!("{:?}", cave_map.basin(point.index));
     }
     0
@@ -322,6 +367,30 @@ mod tests {
         vec![(0,1), (1,0), (1,1), (1,2), (2,1)]
     )]
     #[case(
+        "999
+         909
+         999",
+         (1, 1),
+        1,
+        vec![(1,1)]
+    )]
+    #[case(
+        "99999
+         90909
+         99999",
+         (3, 1),
+        1,
+        vec![(3,1)]
+    )]
+    #[case(
+        "999999
+         911019
+         999999",
+         (4, 1),
+        4,
+        vec![(4,1), (3,1), (2,1), (1,1)]
+    )]
+    #[case(
     "2199943210
      3987894921
      9856789892
@@ -344,7 +413,7 @@ mod tests {
         let cave_map: CaveMap = text.parse().unwrap();
         let actual = cave_map.basin(index);
 
-        println!("{:?}", actual);
+        println!("actual: {:?}", actual);
 
         // Check size
         assert_eq!(actual.len(), expected);
@@ -369,6 +438,15 @@ mod tests {
         cells.sort();
         cells.dedup();
         assert_eq!(cells, vec![Cell::new(0, 0, 0), Cell::new(1, 1, 0)]);
+    }
+
+    #[test]
+    fn test_cell_hashset() {
+        let mut cells: HashSet<Cell> = HashSet::new();
+        cells.insert(Cell::new(0, 0, 0));
+        cells.insert(Cell::new(1, 1, 0));
+        cells.insert(Cell::new(0, 0, 0));
+        assert_eq!(cells.len(), 2);
     }
 
     #[rstest]
