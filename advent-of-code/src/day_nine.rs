@@ -44,13 +44,10 @@ impl CaveMap {
             // Collect unique neighbours
             neighbours.clear();
             for cell in border.clone() {
-                println!("cell: {:?}", cell);
                 for neighbour in self.neighbours(cell.index.0, cell.index.1) {
-                    println!("neighbour: {:?}", neighbour);
                     neighbours.insert(neighbour);
                 }
             }
-            println!("borders: {} neighbours: {}", border.len(), neighbours.len());
 
             // Remove interior
             for cell in neighbours.clone() {
@@ -274,18 +271,20 @@ pub fn part_one(input_file: &str) -> u32 {
     result
 }
 
-pub fn part_two(input_file: &str) -> u32 {
-    println!("{}", input_file);
+pub fn part_two(input_file: &str) -> usize {
     let cave_map: CaveMap = std::fs::read_to_string(input_file)
         .unwrap()
         .parse()
         .unwrap();
-    println!("{}", cave_map);
+    let mut sizes: Vec<usize> = vec![];
     for point in cave_map.clone().low_points() {
-        println!("{:?}", cave_map.basin(point.index).len());
-        // println!("{:?}", cave_map.basin(point.index));
+        let size = cave_map.basin(point.index).len();
+        sizes.push(size);
     }
-    0
+    sizes.sort();
+    let i: usize = sizes.len() - 3;
+    let result = &sizes[i..].iter().product::<usize>();
+    *result
 }
 
 #[cfg(test)]
