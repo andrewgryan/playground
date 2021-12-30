@@ -34,14 +34,35 @@ pub fn score(content: &str) -> u32 {
     }
     let mut result: u32 = 0;
     for (value, count) in points {
-        println!("{} {}", value, count);
         result += value * count;
     }
     result
 }
 
-pub fn parser(_line: &str) -> Syntax {
-    InComplete
+pub fn parser(line: &str) -> Syntax {
+    let tokens: Vec<Token> = line.chars().map(|c| c.into()).collect();
+    let mut stack: Vec<Brace> = vec![];
+    for token in tokens {
+        match token {
+            Token::Open(c) => stack.push(Brace::from(c).unwrap()),
+            Token::Close(c) => match stack.pop() {
+                None => return Corrupt(c),
+                Some(brace) => {
+                    if brace.closed_with() == c {
+                        continue;
+                    } else {
+                        return Corrupt(c);
+                    }
+                }
+            },
+            Token::Skip => continue,
+        }
+    }
+    if stack.len() > 0 {
+        InComplete
+    } else {
+        Complete
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -68,8 +89,33 @@ impl From<char> for Token {
     }
 }
 
-pub struct Chunk {
-    children: Vec<Chunk>,
+#[derive(Debug, PartialEq)]
+pub enum Brace {
+    Round,
+    Square,
+    Curly,
+    Pointy,
+}
+impl Brace {
+    fn from(c: char) -> Option<Self> {
+        match c {
+            '(' | ')' => Some(Self::Round),
+            '[' | ']' => Some(Self::Square),
+            '{' | '}' => Some(Self::Curly),
+            '<' | '>' => Some(Self::Pointy),
+            _ => None,
+        }
+    }
+
+    fn closed_with(self) -> char {
+        use Brace::*;
+        match self {
+            Round => ')',
+            Square => ']',
+            Curly => '}',
+            Pointy => '>',
+        }
+    }
 }
 
 #[cfg(test)]
@@ -91,11 +137,6 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
-    fn test_chunk() {
-        let mut root = Chunk { children: vec![] };
-        root.children.push(Chunk { children: vec![] });
-    }
-
     #[rstest]
     #[case("[)", Corrupt(')'))]
     #[case("(]", Corrupt(']'))]
@@ -106,13 +147,11 @@ mod tests {
     #[case("{()()()>", Corrupt('>'))]
     #[case("(((())))>", Corrupt('>'))]
     #[case("{([(<{}[<>[]}>{[]{[(<()>", Corrupt('}'))]
-    #[ignore]
     fn corrupt_chunk(#[case] text: &str, #[case] expected: Syntax) {
         assert_eq!(parser(text), expected);
     }
 
     #[test]
-    #[ignore]
     fn compute_score() {
         let content = "[({(<(())[]>[[{[]{<()<>>
 [(()[<>])]({[<{<<[]>>(
