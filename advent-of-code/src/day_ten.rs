@@ -6,6 +6,30 @@ pub fn part_one(input_file: &str) -> u32 {
     score(content.as_str())
 }
 
+pub fn part_two(input_file: &str) -> u64 {
+    let content = std::fs::read_to_string(input_file).unwrap();
+    part_two_score(content.as_str())
+}
+
+pub fn part_two_score(content: &str) -> u64 {
+    // Autocomplete score after filtering corrupt/complete lines
+    let mut scores: Vec<u64> = content
+        .split('\n')
+        .map(parser)
+        .filter(|s| match s {
+            Complete | Corrupt(_) => false,
+            InComplete(_) => true,
+        })
+        .map(autocomplete)
+        .map(|s| score_autocomplete(s.as_str()))
+        .collect();
+
+    // Median
+    scores.sort();
+    let i = scores.len() / 2;
+    scores[i]
+}
+
 pub fn score(content: &str) -> u32 {
     let mut points: HashMap<u32, u32> = HashMap::new();
     for line in content.split('\n') {
@@ -39,6 +63,36 @@ pub fn score(content: &str) -> u32 {
     result
 }
 
+pub fn score_autocomplete(text: &str) -> u64 {
+    let mut result = 0;
+    for c in text.chars() {
+        result *= 5;
+        let point = match c {
+            ')' => 1,
+            ']' => 2,
+            '}' => 3,
+            '>' => 4,
+            _ => 0,
+        };
+        result += point;
+    }
+    result
+}
+
+pub fn autocomplete(syntax: Syntax) -> String {
+    use Syntax::*;
+    match syntax {
+        Complete | Corrupt(_) => String::new(),
+        InComplete(stack) => {
+            let mut s = String::new();
+            for brace in stack.iter().rev() {
+                s.push(brace.closed_with());
+            }
+            s
+        }
+    }
+}
+
 pub fn parser(line: &str) -> Syntax {
     let tokens: Vec<Token> = line.chars().map(|c| c.into()).collect();
     let mut stack: Vec<Brace> = vec![];
@@ -59,7 +113,7 @@ pub fn parser(line: &str) -> Syntax {
         }
     }
     if stack.len() > 0 {
-        InComplete
+        InComplete(stack)
     } else {
         Complete
     }
@@ -68,7 +122,7 @@ pub fn parser(line: &str) -> Syntax {
 #[derive(Debug, PartialEq)]
 pub enum Syntax {
     Corrupt(char),
-    InComplete,
+    InComplete(Vec<Brace>),
     Complete,
 }
 use Syntax::*;
@@ -107,9 +161,9 @@ impl Brace {
         }
     }
 
-    fn closed_with(self) -> char {
+    fn closed_with(&self) -> char {
         use Brace::*;
-        match self {
+        match &self {
             Round => ')',
             Square => ']',
             Curly => '}',
@@ -164,5 +218,44 @@ mod tests {
 <{([([[(<>()){}]>(<<{{
 <{([{{}}[<[[[<>{}]]]>[]]";
         assert_eq!(score(content), 26397);
+    }
+
+    // Part 2
+    #[rstest]
+    #[case("{", "}")]
+    #[case("{()", "}")]
+    #[case("[({(<(())[]>[[{[]{<()<>>", "}}]])})]")]
+    fn test_autocomplete(#[case] text: &str, #[case] expected: &str) {
+        let actual = autocomplete(parser(text));
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("", 0)]
+    #[case(")", 1)]
+    #[case("]", 2)]
+    #[case("}", 3)]
+    #[case(">", 4)]
+    #[case("])", 11)]
+    #[case("])}", 58)]
+    #[case("])}>", 294)]
+    fn test_autocomplete_score(#[case] text: &str, #[case] expected: u64) {
+        let actual = score_autocomplete(text);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn part_two_example_solution() {
+        let content = "[({(<(())[]>[[{[]{<()<>>
+[(()[<>])]({[<{<<[]>>(
+{([(<{}[<>[]}>{[]{[(<()>
+(((({<>}<{<{<>}{[]{[]{}
+[[<[([]))<([[{}[[()]]]
+[{[{({}]{}}([{[{{{}}([]
+{<[[]]>}<{[{[{[]{()[[[]
+[<(<(<(<{}))><([]([]()
+<{([([[(<>()){}]>(<<{{
+<{([{{}}[<[[[<>{}]]]>[]]";
+        assert_eq!(part_two_score(content), 288957);
     }
 }
