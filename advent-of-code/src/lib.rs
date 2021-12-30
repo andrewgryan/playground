@@ -6,6 +6,7 @@ pub mod day_four;
 pub mod day_nine;
 pub mod day_seven;
 pub mod day_six;
+pub mod day_ten;
 pub mod day_three;
 pub mod day_two;
 pub mod utils;
