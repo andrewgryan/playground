@@ -1,5 +1,7 @@
-use advent_of_code::day_ten;
+use advent_of_code::day_eleven;
+use std::fs::read_to_string;
 
 fn main() {
-    println!("solution: {}", day_ten::part_two("input-10"));
+    let puzzle_input = read_to_string("input-11").unwrap();
+    println!("solution: {}", day_eleven::part_two(puzzle_input.as_str()));
 }
