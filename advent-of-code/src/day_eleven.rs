@@ -3,9 +3,22 @@ use std::convert::{TryFrom, TryInto};
 use std::ops::{Add, AddAssign};
 
 pub fn part_one(puzzle_input: &str) -> u32 {
-    let grid = to_octopus_array(puzzle_input, (10, 10));
-    println!("{:?}", grid);
-    0
+    // 100 turns of puzzle input flashes
+    play(puzzle_input, (10, 10), 100)
+}
+
+pub fn play(puzzle_input: &str, shape: (usize, usize), turns: u32) -> u32 {
+    let mut array: Array2<Octopus> = to_octopus_array(puzzle_input, shape);
+    let mut flashes = 0;
+    for _ in 0..turns {
+        turn_mut(&mut array);
+        flashes += count_zeros(&array);
+    }
+    flashes
+}
+
+pub fn count_zeros(array: &Array2<Octopus>) -> u32 {
+    array.map(|o| if o.is_zero() { 1 } else { 0 }).sum()
 }
 
 pub fn turn(array: &Array2<Octopus>) -> Array2<Octopus> {
@@ -121,6 +134,10 @@ impl Octopus {
 
     pub fn is_charged(&self) -> bool {
         !self.spent && self.energy_level > 9
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.energy_level == 0
     }
 
     pub fn is_spent(&self) -> bool {
@@ -424,6 +441,41 @@ mod tests {
             turn_mut(&mut actual);
         }
         let expected: Array2<Octopus> = to_octopus_array(end, shape);
+        assert_eq!(actual, expected);
+    }
+    #[rstest]
+    #[case("11111
+            19991
+            19191
+            19991
+            11111", (5,5), 1, 9)]
+    #[case("5483143223
+            2745854711
+            5264556173
+            6141336146
+            6357385478
+            4167524645
+            2176841721
+            6882881134
+            4846848554
+            5283751526", (10,10), 10, 204)]
+    #[case("5483143223
+            2745854711
+            5264556173
+            6141336146
+            6357385478
+            4167524645
+            2176841721
+            6882881134
+            4846848554
+            5283751526", (10,10), 100, 1656)]
+    fn play_and_count_flashes(
+        #[case] text: &str,
+        #[case] shape: (usize, usize),
+        #[case] n: u32,
+        #[case] expected: u32,
+    ) {
+        let actual = play(text, shape, n);
         assert_eq!(actual, expected);
     }
 }
