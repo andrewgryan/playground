@@ -38,17 +38,34 @@ pub fn flash_mut(index: [usize; 2], array: &mut Array2<Octopus>) {
         // Flash octopus
         octopus.flash();
 
+        let mut indices: Vec<[usize; 2]> = vec![];
+
         // Corners
-        array[[i - 1, j - 1]] += 1;
-        array[[i - 1, j + 1]] += 1;
-        array[[i + 1, j + 1]] += 1;
-        array[[i + 1, j - 1]] += 1;
+        if i > 0 && j > 0 {
+            indices.push([i - 1, j - 1]);
+        }
+        if i > 0 {
+            indices.push([i - 1, j + 1]);
+        }
+        indices.push([i + 1, j + 1]);
+        if j > 0 {
+            indices.push([i + 1, j - 1]);
+        }
 
         // Cross
-        array[[i, j + 1]] += 1;
-        array[[i, j - 1]] += 1;
-        array[[i + 1, j]] += 1;
-        array[[i - 1, j]] += 1;
+        indices.push([i, j + 1]);
+        if j > 0 {
+            indices.push([i, j - 1]);
+        }
+        indices.push([i + 1, j]);
+        if i > 0 {
+            indices.push([i - 1, j]);
+        }
+
+        // Apply += 1 to Octopuses at neighbour indices
+        indices
+            .iter()
+            .for_each(|idx| array.get_mut(*idx).into_iter().for_each(|o| *o += 1));
     }
 }
 
@@ -108,6 +125,7 @@ impl TryFrom<char> for Octopus {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::*;
 
     #[test]
     fn octopus_try_from() {
@@ -134,25 +152,56 @@ mod tests {
         assert_eq!(actual[[4, 4]], Octopus::new(9));
     }
 
-    #[test]
-    fn octopus_flash() {
-        let start: &str = "00000
-                           00000
-                           00000
-                           00000
-                           00000";
+    #[rstest]
+    #[case("00000
+            00000
+            00000
+            00000
+            00000",
+            [1, 2],
+           "01110
+            01010
+            01110
+            00000
+            00000")]
+    #[case("00000
+            00000
+            00000
+            00000
+            00000",
+            [0, 0],
+           "01000
+            11000
+            00000
+            00000
+            00000")]
+    #[case("00000
+            00000
+            00000
+            00000
+            00000",
+            [1, 0],
+           "11000
+            01000
+            11000
+            00000
+            00000")]
+    #[case("00000
+            00000
+            00000
+            00000
+            00000",
+            [4, 4],
+           "00000
+            00000
+            00000
+            00011
+            00010")]
+    fn octopus_flash(#[case] start: &str, #[case] index: [usize; 2], #[case] end: &str) {
         let array: Array2<Octopus> = to_octopus_array(start, (5, 5));
-
-        let [i, j] = [1, 2];
-        let actual = flash([i, j], &array);
-
-        let end: &str = "01110
-                         01010
-                         01110
-                         00000
-                         00000";
+        let actual = flash(index, &array);
         let mut expected: Array2<Octopus> = to_octopus_array(end, (5, 5));
-        expected[[i, j]].flash();
+        expected[index].flash();
         assert_eq!(actual, expected);
     }
 
