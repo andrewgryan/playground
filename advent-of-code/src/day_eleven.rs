@@ -7,6 +7,22 @@ pub fn part_one(puzzle_input: &str) -> u32 {
     play(puzzle_input, (10, 10), 100)
 }
 
+pub fn part_two(puzzle_input: &str) -> u32 {
+    find_first_sync(puzzle_input, (10, 10))
+}
+
+pub fn find_first_sync(puzzle_input: &str, shape: (usize, usize)) -> u32 {
+    let mut array: Array2<Octopus> = to_octopus_array(puzzle_input, shape);
+    let mut flashes = 0;
+    let mut turn = 0;
+    while flashes != 100 {
+        turn_mut(&mut array);
+        turn += 1;
+        flashes = count_zeros(&array);
+    }
+    turn
+}
+
 pub fn play(puzzle_input: &str, shape: (usize, usize), turns: u32) -> u32 {
     let mut array: Array2<Octopus> = to_octopus_array(puzzle_input, shape);
     let mut flashes = 0;
@@ -443,6 +459,7 @@ mod tests {
         let expected: Array2<Octopus> = to_octopus_array(end, shape);
         assert_eq!(actual, expected);
     }
+
     #[rstest]
     #[case("11111
             19991
@@ -476,6 +493,26 @@ mod tests {
         #[case] expected: u32,
     ) {
         let actual = play(text, shape, n);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("5483143223
+            2745854711
+            5264556173
+            6141336146
+            6357385478
+            4167524645
+            2176841721
+            6882881134
+            4846848554
+            5283751526", (10,10), 195)]
+    fn find_first_synchronized_turn(
+        #[case] text: &str,
+        #[case] shape: (usize, usize),
+        #[case] expected: u32,
+    ) {
+        let actual = find_first_sync(text, shape);
         assert_eq!(actual, expected);
     }
 }
