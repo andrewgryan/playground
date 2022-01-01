@@ -1,11 +1,50 @@
+use std::collections::HashMap;
+
 #[derive(Debug, PartialEq)]
-pub struct Graph(Vec<Edge>);
+pub struct Graph {
+    edges: Vec<Edge>,
+}
+
+impl Graph {
+    pub fn from_vec(edges: Vec<Edge>) -> Self {
+        Self { edges }
+    }
+    pub fn find_path(&self) -> Vec<Node> {
+        // Build vertex structure
+        let mut map: HashMap<Node, Node> = HashMap::new();
+        for edge in &self.edges {
+            map.insert(edge.0.clone(), edge.1.clone());
+        }
+
+        // Traverse mapping
+        let mut path: Vec<Node> = vec![];
+        let mut node: Node = Node::Start;
+        loop {
+            match map.get(&node) {
+                None => break,
+                Some(next_node) => match next_node {
+                    Node::End => {
+                        path.push(node);
+                        path.push(next_node.clone());
+                        break;
+                    }
+                    _ => {
+                        path.push(node);
+                        node = next_node.clone();
+                    }
+                },
+            }
+        }
+
+        path
+    }
+}
 
 impl std::str::FromStr for Graph {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(
+        Ok(Self::from_vec(
             s.split('\n')
                 .map(|line| line.parse::<Edge>().unwrap())
                 .collect(),
@@ -30,7 +69,7 @@ impl std::str::FromStr for Edge {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Node {
     Start,
     End,
@@ -85,10 +124,21 @@ mod tests {
         let s: &str = "start-A
                        A-end";
         let actual: Graph = s.parse().unwrap();
-        let expected: Graph = Graph(vec![
+        let expected: Graph = Graph::from_vec(vec![
             Edge(Start, BigCave("A".to_string())),
             Edge(BigCave("A".to_string()), End),
         ]);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn find_path() {
+        let graph: Graph = "start-a
+                            a-end"
+            .parse()
+            .unwrap();
+        let actual = graph.find_path();
+        let expected: Vec<Node> = vec![Start, "a".parse().unwrap(), End];
         assert_eq!(actual, expected);
     }
 }
