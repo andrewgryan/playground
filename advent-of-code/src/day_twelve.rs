@@ -20,8 +20,12 @@ impl std::str::FromStr for Edge {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let left: Node = s.split('-').nth(0).unwrap().parse().unwrap();
-        let right: Node = s.split('-').nth(1).unwrap().parse().unwrap();
+        // Remove whitespace
+        let text: String = s.split_whitespace().collect();
+        let lhs: &str = text.split('-').nth(0).unwrap();
+        let rhs: &str = text.split('-').nth(1).unwrap();
+        let left: Node = lhs.parse().unwrap();
+        let right: Node = rhs.parse().unwrap();
         Ok(Self(left, right))
     }
 }
@@ -68,15 +72,18 @@ mod tests {
         assert_eq!(s.parse::<Node>().unwrap(), expected);
     }
 
-    fn str_to_edge() {
-        let s: &str = "start-A";
+    #[rstest]
+    #[case("start-end", Edge(Start, End))]
+    #[case("  start-end", Edge(Start, End))]
+    fn str_to_edge(#[case] s: &str, #[case] expected: Edge) {
         let actual: Edge = s.parse().unwrap();
-        let expected: Edge = Edge(Start, BigCave("A".to_string()));
         assert_eq!(actual, expected);
     }
 
+    #[test]
     fn str_to_graph() {
-        let s: &str = "start-A\nA-end";
+        let s: &str = "start-A
+                       A-end";
         let actual: Graph = s.parse().unwrap();
         let expected: Graph = Graph(vec![
             Edge(Start, BigCave("A".to_string())),
