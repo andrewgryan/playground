@@ -1,4 +1,37 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+
+pub struct IterPath {
+    adjacency_list: HashMap<Node, Vec<Node>>,
+    stack: Vec<(Node, Vec<Node>, HashSet<Node>)>,
+}
+
+impl Iterator for IterPath {
+    type Item = Vec<Node>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.stack.len() > 0 {
+            let (node, path, mut visited) = self.stack.pop().unwrap();
+
+            if node == Node::End {
+                return Some(path);
+            }
+
+            if visited.contains(&node) {
+                continue;
+            }
+
+            visited.insert(node.clone());
+
+            for neighbour in self.adjacency_list.get(&node).unwrap() {
+                let mut next_path = path.clone();
+                next_path.push(neighbour.clone());
+                self.stack
+                    .push((neighbour.clone(), next_path, visited.clone()));
+            }
+        }
+        None
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Graph {
@@ -9,12 +42,28 @@ impl Graph {
     pub fn from_vec(edges: Vec<Edge>) -> Self {
         Self { edges }
     }
+
+    pub fn find_all_paths(&self) -> IterPath {
+        let adjacency_list = self.build_map();
+        let start = Node::Start;
+        IterPath {
+            adjacency_list: adjacency_list.clone(),
+            stack: vec![(start.clone(), vec![start], HashSet::new())],
+        }
+    }
+
+    fn build_map(&self) -> HashMap<Node, Vec<Node>> {
+        let mut map: HashMap<Node, Vec<Node>> = HashMap::new();
+        for edge in &self.edges {
+            let nodes = map.entry(edge.0.clone()).or_insert_with(Vec::new);
+            nodes.push(edge.1.clone());
+        }
+        map
+    }
+
     pub fn find_path(&self) -> Vec<Node> {
         // Build vertex structure
-        let mut map: HashMap<Node, Node> = HashMap::new();
-        for edge in &self.edges {
-            map.insert(edge.0.clone(), edge.1.clone());
-        }
+        let map: HashMap<Node, Vec<Node>> = self.build_map();
 
         // Traverse mapping
         let mut path: Vec<Node> = vec![];
@@ -22,17 +71,20 @@ impl Graph {
         loop {
             match map.get(&node) {
                 None => break,
-                Some(next_node) => match next_node {
-                    Node::End => {
-                        path.push(node);
-                        path.push(next_node.clone());
-                        break;
+                Some(nodes) => {
+                    let next_node = nodes.iter().next().unwrap();
+                    match next_node {
+                        Node::End => {
+                            path.push(node);
+                            path.push(next_node.clone());
+                            break;
+                        }
+                        _ => {
+                            path.push(node);
+                            node = next_node.clone();
+                        }
                     }
-                    _ => {
-                        path.push(node);
-                        node = next_node.clone();
-                    }
-                },
+                }
             }
         }
 
@@ -53,6 +105,38 @@ impl std::str::FromStr for Graph {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Path(Vec<Node>);
+
+impl Path {
+    pub fn to_vec(&self) -> Vec<Node> {
+        match self {
+            Path(v) => v.clone(),
+        }
+    }
+}
+
+impl std::str::FromStr for Path {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let text: String = s.split_whitespace().collect();
+        let nodes: Vec<Node> = text.split('-').map(|s| s.parse().unwrap()).collect();
+        Ok(Self(nodes))
+    }
+}
+
+pub fn fib(n: u32) -> u32 {
+    fib_recurse(1, n)
+}
+pub fn fib_recurse(c: u32, n: u32) -> u32 {
+    match n {
+        0 => c,
+        1 => c,
+        _ => fib_recurse(n * c, n - 1),
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Edge(Node, Node);
 
 impl std::str::FromStr for Edge {
@@ -61,7 +145,7 @@ impl std::str::FromStr for Edge {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Remove whitespace
         let text: String = s.split_whitespace().collect();
-        let lhs: &str = text.split('-').nth(0).unwrap();
+        let lhs: &str = text.split('-').next().unwrap();
         let rhs: &str = text.split('-').nth(1).unwrap();
         let left: Node = lhs.parse().unwrap();
         let right: Node = rhs.parse().unwrap();
@@ -131,14 +215,37 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
-    #[test]
-    fn find_path() {
-        let graph: Graph = "start-a
-                            a-end"
-            .parse()
-            .unwrap();
+    #[rstest]
+    #[case("start-a
+            a-end", vec!["start", "a", "end"])]
+    #[case("start-a
+            start-b
+            a-end
+            b-end", vec!["start", "a", "end"])]
+    fn find_path(#[case] s: &str, #[case] nodes: Vec<&str>) {
+        let graph: Graph = s.parse().unwrap();
         let actual = graph.find_path();
-        let expected: Vec<Node> = vec![Start, "a".parse().unwrap(), End];
+        let expected: Vec<Node> = nodes.iter().map(|s| s.parse().unwrap()).collect();
         assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("start-a
+            start-b
+            a-end
+            b-end", vec!["start-a-end", "start-b-end"])]
+    fn find_all_paths(#[case] s: &str, #[case] texts: Vec<&str>) {
+        let graph: Graph = s.parse().unwrap();
+        let actual: Vec<Vec<Node>> = graph.find_all_paths().collect();
+        println!("{:?}", actual);
+        for text in texts {
+            let path: Path = text.parse().unwrap();
+            assert!(actual.contains(&path.to_vec()), "contains: {:?}", path);
+        }
+    }
+
+    #[test]
+    fn test_fib() {
+        assert_eq!(fib(5), 120);
     }
 }
