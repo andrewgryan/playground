@@ -1,5 +1,25 @@
 use std::collections::{HashMap, HashSet};
 
+pub fn to_adjacency(edges: Vec<Edge>) -> HashMap<Node, Vec<Node>> {
+    let mut adjacency_list: HashMap<Node, Vec<Node>> = HashMap::new();
+
+    for edge in &edges {
+        // Edge 0 -> 1
+        let nodes = adjacency_list
+            .entry(edge.0.clone())
+            .or_insert_with(Vec::new);
+        nodes.push(edge.1.clone());
+
+        // Edge 1 -> 0
+        let nodes = adjacency_list
+            .entry(edge.1.clone())
+            .or_insert_with(Vec::new);
+        nodes.push(edge.0.clone());
+    }
+
+    adjacency_list
+}
+
 pub struct IterPath {
     adjacency_list: HashMap<Node, Vec<Node>>,
     stack: Vec<(Node, Vec<Node>, HashSet<Node>)>,
@@ -20,7 +40,13 @@ impl Iterator for IterPath {
                 continue;
             }
 
-            visited.insert(node.clone());
+            // Support visiting BigCave more than once
+            match node {
+                Node::BigCave(_) => (),
+                _ => {
+                    visited.insert(node.clone());
+                }
+            }
 
             for neighbour in self.adjacency_list.get(&node).unwrap() {
                 let mut next_path = path.clone();
@@ -44,7 +70,7 @@ impl Graph {
     }
 
     pub fn find_all_paths(&self) -> IterPath {
-        let adjacency_list = self.build_map();
+        let adjacency_list = to_adjacency(self.edges.clone());
         let start = Node::Start;
         IterPath {
             adjacency_list: adjacency_list.clone(),
@@ -136,7 +162,7 @@ pub fn fib_recurse(c: u32, n: u32) -> u32 {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Edge(Node, Node);
 
 impl std::str::FromStr for Edge {
@@ -233,15 +259,50 @@ mod tests {
     #[case("start-a
             start-b
             a-end
-            b-end", vec!["start-a-end", "start-b-end"])]
-    fn find_all_paths(#[case] s: &str, #[case] texts: Vec<&str>) {
+            b-end", 2, vec!["start-a-end", "start-b-end"])]
+    #[case("start-A
+            start-b
+            A-c
+            A-b
+            b-d
+            A-end
+            b-end", 10, vec![
+            "start-A-b-A-c-A-end",
+            "start-A-b-A-end",
+            "start-A-b-end",
+            "start-A-c-A-b-A-end",
+            "start-A-c-A-b-end",
+            "start-A-c-A-end",
+            "start-A-end",
+            "start-b-A-c-A-end",
+            "start-b-A-end",
+            "start-b-end",
+    ])]
+    fn find_all_paths(#[case] s: &str, #[case] n: usize, #[case] texts: Vec<&str>) {
         let graph: Graph = s.parse().unwrap();
         let actual: Vec<Vec<Node>> = graph.find_all_paths().collect();
         println!("{:?}", actual);
+        assert_eq!(actual.len(), n);
         for text in texts {
             let path: Path = text.parse().unwrap();
             assert!(actual.contains(&path.to_vec()), "contains: {:?}", path);
         }
+    }
+
+    #[test]
+    fn adjaceny_list_from_edges() {
+        let edges: Vec<Edge> = vec!["a-B", "B-c"]
+            .iter()
+            .map(|s| s.parse().unwrap())
+            .collect();
+        let actual: HashMap<Node, Vec<Node>> = to_adjacency(edges);
+        let a = SmallCave("a".to_string());
+        let b = BigCave("B".to_string());
+        let c = SmallCave("c".to_string());
+        assert!(actual.get(&a).unwrap().contains(&b));
+        assert!(actual.get(&b).unwrap().contains(&a));
+        assert!(actual.get(&b).unwrap().contains(&c));
+        assert!(actual.get(&c).unwrap().contains(&b));
     }
 
     #[test]
