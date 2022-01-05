@@ -1,5 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
+pub fn part_one(content: &str) -> usize {
+    let graph: Graph = content.parse().unwrap();
+    let paths: Vec<Vec<Node>> = graph.find_all_paths().collect();
+    paths.len()
+}
+
 pub fn to_adjacency(edges: Vec<Edge>) -> HashMap<Node, Vec<Node>> {
     let mut adjacency_list: HashMap<Node, Vec<Node>> = HashMap::new();
 
@@ -124,7 +130,9 @@ impl std::str::FromStr for Graph {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::from_vec(
             s.split('\n')
-                .map(|line| line.parse::<Edge>().unwrap())
+                .map(|line| line.parse::<Edge>())
+                .filter(|result| result.is_ok())
+                .map(|result| result.unwrap())
                 .collect(),
         ))
     }
@@ -169,13 +177,17 @@ impl std::str::FromStr for Edge {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Remove whitespace
-        let text: String = s.split_whitespace().collect();
-        let lhs: &str = text.split('-').next().unwrap();
-        let rhs: &str = text.split('-').nth(1).unwrap();
-        let left: Node = lhs.parse().unwrap();
-        let right: Node = rhs.parse().unwrap();
-        Ok(Self(left, right))
+        if s.contains('-') {
+            // Remove whitespace
+            let text: String = s.split_whitespace().collect();
+            let lhs: &str = text.split('-').next().unwrap();
+            let rhs: &str = text.split('-').nth(1).unwrap();
+            let left: Node = lhs.parse().unwrap();
+            let right: Node = rhs.parse().unwrap();
+            Ok(Self(left, right))
+        } else {
+            Err(())
+        }
     }
 }
 
