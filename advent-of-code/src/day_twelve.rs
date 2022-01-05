@@ -2,8 +2,60 @@ use std::collections::{HashMap, HashSet};
 
 pub fn part_one(content: &str) -> usize {
     let graph: Graph = content.parse().unwrap();
-    let paths: Vec<Vec<Node>> = graph.find_all_paths().collect();
+    let paths: Vec<Vec<Node>> = graph.find_all_paths(rule_one).collect();
     paths.len()
+}
+
+pub fn part_two(content: &str) -> usize {
+    let graph: Graph = content.parse().unwrap();
+    let paths: Vec<Vec<Node>> = graph.find_all_paths(rule_two).collect();
+    paths.len()
+}
+
+pub fn rule_one(current: &Node, _path: &Vec<Node>, visited: &mut HashSet<Node>) {
+    match current {
+        Node::BigCave(_) => (),
+        _ => {
+            visited.insert(current.clone());
+        }
+    };
+}
+
+pub fn rule_two(current: &Node, path: &Vec<Node>, visited: &mut HashSet<Node>) {
+    match current {
+        Node::BigCave(_) => (),
+        Node::Start | Node::End => {
+            visited.insert(current.clone());
+        }
+        Node::SmallCave(_) => small_cave_rule(current, path, visited),
+    }
+}
+
+pub fn small_cave_rule(current: &Node, path: &Vec<Node>, visited: &mut HashSet<Node>) {
+    // Allowed visit a single small cave twice
+    let mut frequency: HashMap<&Node, u32> = HashMap::new();
+    for node in path {
+        match node {
+            Node::SmallCave(_) => {
+                let ptr = frequency.entry(node).or_insert(0);
+                *ptr += 1;
+            }
+            _ => (),
+        }
+    }
+
+    // Mark as visited only if path contains duplicated SmallCave
+    if frequency.iter().map(|(_, v)| v).any(|v| v > &1) {
+        // Mark all small caves as visited if any visited twice
+        for node in path {
+            match node {
+                Node::SmallCave(_) => {
+                    visited.insert(node.clone());
+                }
+                _ => (),
+            }
+        }
+    }
 }
 
 pub fn to_adjacency(edges: Vec<Edge>) -> HashMap<Node, Vec<Node>> {
@@ -29,6 +81,7 @@ pub fn to_adjacency(edges: Vec<Edge>) -> HashMap<Node, Vec<Node>> {
 pub struct IterPath {
     adjacency_list: HashMap<Node, Vec<Node>>,
     stack: Vec<(Node, Vec<Node>, HashSet<Node>)>,
+    rule: fn(&Node, &Vec<Node>, &mut HashSet<Node>),
 }
 
 impl Iterator for IterPath {
@@ -47,12 +100,7 @@ impl Iterator for IterPath {
             }
 
             // Support visiting BigCave more than once
-            match node {
-                Node::BigCave(_) => (),
-                _ => {
-                    visited.insert(node.clone());
-                }
-            }
+            (&self.rule)(&node, &path, &mut visited);
 
             for neighbour in self.adjacency_list.get(&node).unwrap() {
                 let mut next_path = path.clone();
@@ -75,12 +123,13 @@ impl Graph {
         Self { edges }
     }
 
-    pub fn find_all_paths(&self) -> IterPath {
+    pub fn find_all_paths(&self, rule: fn(&Node, &Vec<Node>, &mut HashSet<Node>)) -> IterPath {
         let adjacency_list = to_adjacency(self.edges.clone());
         let start = Node::Start;
         IterPath {
             adjacency_list: adjacency_list.clone(),
             stack: vec![(start.clone(), vec![start], HashSet::new())],
+            rule,
         }
     }
 
@@ -154,7 +203,7 @@ impl std::str::FromStr for Path {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let text: String = s.split_whitespace().collect();
-        let nodes: Vec<Node> = text.split('-').map(|s| s.parse().unwrap()).collect();
+        let nodes: Vec<Node> = text.split(',').map(|s| s.parse().unwrap()).collect();
         Ok(Self(nodes))
     }
 }
@@ -271,7 +320,7 @@ mod tests {
     #[case("start-a
             start-b
             a-end
-            b-end", 2, vec!["start-a-end", "start-b-end"])]
+            b-end", 2, vec!["start,a,end", "start,b,end"])]
     #[case("start-A
             start-b
             A-c
@@ -279,21 +328,79 @@ mod tests {
             b-d
             A-end
             b-end", 10, vec![
-            "start-A-b-A-c-A-end",
-            "start-A-b-A-end",
-            "start-A-b-end",
-            "start-A-c-A-b-A-end",
-            "start-A-c-A-b-end",
-            "start-A-c-A-end",
-            "start-A-end",
-            "start-b-A-c-A-end",
-            "start-b-A-end",
-            "start-b-end",
+            "start,A,b,A,c,A,end",
+            "start,A,b,A,end",
+            "start,A,b,end",
+            "start,A,c,A,b,A,end",
+            "start,A,c,A,b,end",
+            "start,A,c,A,end",
+            "start,A,end",
+            "start,b,A,c,A,end",
+            "start,b,A,end",
+            "start,b,end",
     ])]
     fn find_all_paths(#[case] s: &str, #[case] n: usize, #[case] texts: Vec<&str>) {
         let graph: Graph = s.parse().unwrap();
-        let actual: Vec<Vec<Node>> = graph.find_all_paths().collect();
-        println!("{:?}", actual);
+        let actual: Vec<Vec<Node>> = graph.find_all_paths(rule_one).collect();
+        assert_eq!(actual.len(), n);
+        for text in texts {
+            let path: Path = text.parse().unwrap();
+            assert!(actual.contains(&path.to_vec()), "contains: {:?}", path);
+        }
+    }
+
+    #[rstest]
+    #[case("start-A
+            start-b
+            A-c
+            A-b
+            b-d
+            A-end
+            b-end", 36, vec![
+            "start,A,b,A,b,A,c,A,end",
+            "start,A,b,A,b,A,end",
+            "start,A,b,A,b,end",
+            "start,A,b,A,c,A,b,A,end",
+            "start,A,b,A,c,A,b,end",
+            "start,A,b,A,c,A,c,A,end",
+            "start,A,b,A,c,A,end",
+            "start,A,b,A,end",
+            "start,A,b,d,b,A,c,A,end",
+            "start,A,b,d,b,A,end",
+            "start,A,b,d,b,end",
+            "start,A,b,end",
+            "start,A,c,A,b,A,b,A,end",
+            "start,A,c,A,b,A,b,end",
+            "start,A,c,A,b,A,c,A,end",
+            "start,A,c,A,b,A,end",
+            "start,A,c,A,b,d,b,A,end",
+            "start,A,c,A,b,d,b,end",
+            "start,A,c,A,b,end",
+            "start,A,c,A,c,A,b,A,end",
+            "start,A,c,A,c,A,b,end",
+            "start,A,c,A,c,A,end",
+            "start,A,c,A,end",
+            "start,A,end",
+            "start,b,A,b,A,c,A,end",
+            "start,b,A,b,A,end",
+            "start,b,A,b,end",
+            "start,b,A,c,A,b,A,end",
+            "start,b,A,c,A,b,end",
+            "start,b,A,c,A,c,A,end",
+            "start,b,A,c,A,end",
+            "start,b,A,end",
+            "start,b,d,b,A,c,A,end",
+            "start,b,d,b,A,end",
+            "start,b,d,b,end",
+            "start,b,end",
+    ])]
+    fn find_all_paths_with_duplicate_small_path(
+        #[case] s: &str,
+        #[case] n: usize,
+        #[case] texts: Vec<&str>,
+    ) {
+        let graph: Graph = s.parse().unwrap();
+        let actual: Vec<Vec<Node>> = graph.find_all_paths(rule_two).collect();
         assert_eq!(actual.len(), n);
         for text in texts {
             let path: Path = text.parse().unwrap();

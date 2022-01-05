@@ -3,5 +3,5 @@ use std::fs::read_to_string;
 
 fn main() {
     let puzzle_input = read_to_string("input-12").unwrap();
-    println!("solution: {}", day_twelve::part_one(puzzle_input.as_str()));
+    println!("solution: {}", day_twelve::part_two(puzzle_input.as_str()));
 }
