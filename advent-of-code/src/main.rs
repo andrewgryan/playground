@@ -5,6 +5,6 @@ fn main() {
     let puzzle_input = read_to_string("input-13").unwrap();
     println!(
         "solution: {}",
-        day_thirteen::part_one(puzzle_input.as_str())
+        day_thirteen::part_two(puzzle_input.as_str())
     );
 }

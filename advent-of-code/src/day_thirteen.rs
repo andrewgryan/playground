@@ -1,4 +1,6 @@
 use std::collections::HashSet;
+use std::fmt;
+use std::fmt::write;
 use std::str::FromStr;
 
 pub fn part_one(puzzle_input: &str) -> usize {
@@ -31,7 +33,68 @@ pub fn part_one(puzzle_input: &str) -> usize {
     set.len()
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+pub fn part_two(puzzle_input: &str) -> usize {
+    // Parse dots
+    let mut dots: Vec<Dot> = puzzle_input
+        .split('\n')
+        .map(|l| l.parse())
+        .filter(|r| r.is_ok())
+        .map(|r| r.unwrap())
+        .collect();
+    println!("{:?}", dots);
+
+    // Parse folds
+    let folds: Vec<Fold> = puzzle_input
+        .split('\n')
+        .map(|l| l.parse())
+        .filter(|r| r.is_ok())
+        .map(|r| r.unwrap())
+        .collect();
+
+    for fold in folds {
+        let mut set = HashSet::new();
+        for dot in dots {
+            set.insert(apply(&fold, dot));
+        }
+        dots = set.iter().map(|d| d.clone()).collect();
+    }
+
+    // Display Dots
+    let paper: Paper = Paper { dots: dots.clone() };
+    println!("{}", paper);
+
+    dots.len()
+}
+
+struct Paper {
+    dots: Vec<Dot>,
+}
+impl fmt::Display for Paper {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut x = self.dots.iter().map(|d| d.0).max().unwrap();
+        let mut y = self.dots.iter().map(|d| d.1).max().unwrap();
+
+        // Off by one error
+        x += 1;
+        y += 1;
+
+        // Build &str
+        let mut s: String = String::new();
+        for j in 0..y {
+            for i in 0..x {
+                if self.dots.contains(&Dot(i, j)) {
+                    s.push('#');
+                } else {
+                    s.push(' ');
+                }
+            }
+            s.push('\n');
+        }
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Dot(u32, u32);
 
 impl FromStr for Dot {
