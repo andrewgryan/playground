@@ -27,7 +27,7 @@ pub fn shape(_: Vec<(u32, u32)>) -> (u32, u32) {
 }
 
 #[derive(Debug, PartialEq)]
-struct Dot(u32, u32);
+pub struct Dot(u32, u32);
 
 impl FromStr for Dot {
     type Err = ();
@@ -44,7 +44,7 @@ impl FromStr for Dot {
 }
 
 #[derive(Debug, PartialEq)]
-enum Fold {
+pub enum Fold {
     X(u32),
     Y(u32),
 }
@@ -61,6 +61,22 @@ impl FromStr for Fold {
         } else {
             Err(())
         }
+    }
+}
+
+pub fn apply(fold: Fold, dot: Dot) -> Dot {
+    match fold {
+        Fold::Y(n) => Dot(dot.0, reflect(dot.1, n)),
+        _ => dot,
+    }
+}
+
+fn reflect(v: u32, about: u32) -> u32 {
+    if v >= about {
+        let d = v - about;
+        (about - d) - 1
+    } else {
+        v
     }
 }
 
@@ -95,6 +111,17 @@ mod tests {
         let dots = vec![];
         let actual = shape(dots);
         let expected = (0, 0);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case(Fold::Y(7), Dot(0, 0), Dot(0, 0))]
+    #[case(Fold::Y(7), Dot(0, 7), Dot(0, 6))]
+    #[case(Fold::Y(7), Dot(0, 8), Dot(0, 5))]
+    #[case(Fold::Y(7), Dot(0, 13), Dot(0, 0))]
+    #[case(Fold::Y(7), Dot(0, 12), Dot(0, 1))]
+    fn apply_fold_to_dot(#[case] fold: Fold, #[case] dot: Dot, #[case] expected: Dot) {
+        let actual = apply(fold, dot);
         assert_eq!(actual, expected);
     }
 }
