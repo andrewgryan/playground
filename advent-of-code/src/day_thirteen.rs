@@ -1,6 +1,7 @@
+use std::collections::HashSet;
 use std::str::FromStr;
 
-pub fn part_one(puzzle_input: &str) -> u32 {
+pub fn part_one(puzzle_input: &str) -> usize {
     // Parse dots
     let dots: Vec<Dot> = puzzle_input
         .split('\n')
@@ -17,16 +18,20 @@ pub fn part_one(puzzle_input: &str) -> u32 {
         .filter(|r| r.is_ok())
         .map(|r| r.unwrap())
         .collect();
+
+    let fold = folds.iter().next().unwrap();
+    println!("{:?}", fold);
+    let mut set = HashSet::new();
+    for dot in dots {
+        set.insert(apply(fold, dot));
+    }
+
     println!("{:?}", folds);
 
-    0
+    set.len()
 }
 
-pub fn shape(_: Vec<(u32, u32)>) -> (u32, u32) {
-    (0, 0)
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct Dot(u32, u32);
 
 impl FromStr for Dot {
@@ -64,17 +69,17 @@ impl FromStr for Fold {
     }
 }
 
-pub fn apply(fold: Fold, dot: Dot) -> Dot {
+pub fn apply(fold: &Fold, dot: Dot) -> Dot {
     match fold {
-        Fold::Y(n) => Dot(dot.0, reflect(dot.1, n)),
-        _ => dot,
+        Fold::Y(n) => Dot(dot.0, reflect(dot.1, *n)),
+        Fold::X(n) => Dot(reflect(dot.0, *n), dot.1),
     }
 }
 
 fn reflect(v: u32, about: u32) -> u32 {
-    if v >= about {
+    if v > about {
         let d = v - about;
-        (about - d) - 1
+        about - d
     } else {
         v
     }
@@ -106,22 +111,66 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
-    #[test]
-    fn shape_transparent_dots() {
-        let dots = vec![];
-        let actual = shape(dots);
-        let expected = (0, 0);
+    #[rstest]
+    #[case(Fold::Y(7), Dot(0, 0), Dot(0, 0))]
+    #[case(Fold::Y(7), Dot(0, 1), Dot(0, 1))]
+    #[case(Fold::Y(7), Dot(0, 2), Dot(0, 2))]
+    #[case(Fold::Y(7), Dot(0, 3), Dot(0, 3))]
+    #[case(Fold::Y(7), Dot(0, 4), Dot(0, 4))]
+    #[case(Fold::Y(7), Dot(0, 5), Dot(0, 5))]
+    #[case(Fold::Y(7), Dot(0, 6), Dot(0, 6))]
+    #[case(Fold::Y(7), Dot(0, 7), Dot(0, 7))]
+    #[case(Fold::Y(7), Dot(0, 8), Dot(0, 6))]
+    #[case(Fold::Y(7), Dot(0, 9), Dot(0, 5))]
+    #[case(Fold::Y(7), Dot(0, 10), Dot(0, 4))]
+    #[case(Fold::Y(7), Dot(0, 11), Dot(0, 3))]
+    #[case(Fold::Y(7), Dot(0, 12), Dot(0, 2))]
+    #[case(Fold::Y(7), Dot(0, 13), Dot(0, 1))]
+    #[case(Fold::Y(7), Dot(0, 14), Dot(0, 0))]
+    #[case(Fold::X(7), Dot(0, 0), Dot(0, 0))]
+    #[case(Fold::X(7), Dot(1, 0), Dot(1, 0))]
+    #[case(Fold::X(7), Dot(2, 0), Dot(2, 0))]
+    #[case(Fold::X(7), Dot(3, 0), Dot(3, 0))]
+    #[case(Fold::X(7), Dot(4, 0), Dot(4, 0))]
+    #[case(Fold::X(7), Dot(5, 0), Dot(5, 0))]
+    #[case(Fold::X(7), Dot(6, 0), Dot(6, 0))]
+    #[case(Fold::X(7), Dot(7, 0), Dot(7, 0))]
+    #[case(Fold::X(7), Dot(8, 0), Dot(6, 0))]
+    #[case(Fold::X(7), Dot(9, 0), Dot(5, 0))]
+    #[case(Fold::X(7), Dot(10, 0), Dot(4, 0))]
+    #[case(Fold::X(7), Dot(11, 0), Dot(3, 0))]
+    #[case(Fold::X(7), Dot(12, 0), Dot(2, 0))]
+    #[case(Fold::X(7), Dot(13, 0), Dot(1, 0))]
+    #[case(Fold::X(7), Dot(14, 0), Dot(0, 0))]
+    fn apply_fold_to_dot(#[case] fold: Fold, #[case] dot: Dot, #[case] expected: Dot) {
+        let actual = apply(&fold, dot);
         assert_eq!(actual, expected);
     }
 
-    #[rstest]
-    #[case(Fold::Y(7), Dot(0, 0), Dot(0, 0))]
-    #[case(Fold::Y(7), Dot(0, 7), Dot(0, 6))]
-    #[case(Fold::Y(7), Dot(0, 8), Dot(0, 5))]
-    #[case(Fold::Y(7), Dot(0, 13), Dot(0, 0))]
-    #[case(Fold::Y(7), Dot(0, 12), Dot(0, 1))]
-    fn apply_fold_to_dot(#[case] fold: Fold, #[case] dot: Dot, #[case] expected: Dot) {
-        let actual = apply(fold, dot);
-        assert_eq!(actual, expected);
+    #[test]
+    fn test_part_one() {
+        let puzzle = "
+6,10
+0,14
+9,10
+0,3
+10,4
+4,11
+6,0
+6,12
+4,1
+0,13
+10,12
+3,4
+3,0
+8,4
+1,10
+2,14
+8,10
+9,0
+
+fold along y=7
+fold along x=5";
+        assert_eq!(part_one(puzzle), 17);
     }
 }
