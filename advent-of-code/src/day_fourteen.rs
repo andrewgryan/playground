@@ -1,10 +1,27 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-pub fn part_one(puzzle: &str) -> u32 {
-    println!("{}", puzzle);
+pub fn part_two(puzzle: &str) -> u64 {
+    let mut letters: HashMap<char, u64> = HashMap::new();
+    let mut pairs: HashMap<(char, char), u64> = HashMap::new();
 
     let polymer: Polymer = puzzle.split('\n').next().unwrap().parse().unwrap();
+
+    // Initialise letters tally
+    for c in polymer.to_string().chars() {
+        let ptr = letters.entry(c).or_insert(0);
+        *ptr += 1;
+    }
+
+    // Initialize pairs tally
+    let s = polymer.to_string();
+    let left = s.chars();
+    let mut right = s.chars();
+    right.next();
+    for pair in left.zip(right) {
+        let ptr = pairs.entry(pair).or_insert(0);
+        *ptr += 1;
+    }
 
     let rules: Vec<Rule> = puzzle
         .split('\n')
@@ -12,13 +29,75 @@ pub fn part_one(puzzle: &str) -> u32 {
         .filter(|r| r.is_ok())
         .map(|r| r.unwrap())
         .collect();
-    println!("{:?}", polymer);
-    let mut table: HashMap<String, char> = HashMap::new();
+
+    // Map rules
+    let mut table: HashMap<(char, char), char> = HashMap::new();
     for rule in rules {
-        table.insert(rule.0, rule.1);
+        let pair = rule.0.clone();
+        let a = pair.chars().next().unwrap();
+        let b = pair.chars().nth(1).unwrap();
+        let c = rule.1.clone();
+        table.insert((a, b), c);
     }
-    println!("{:?}", table);
-    0
+
+    for _ in 0..40 {
+        // Apply rules to pairs + letters
+        let mut next_pairs: HashMap<(char, char), u64> = HashMap::new();
+        for ((a, b), c) in &table {
+            let factor = pairs.get(&(*a, *b)).unwrap_or(&0);
+            if *factor == 0 {
+                continue;
+            } else {
+                // AC
+                let ptr = next_pairs.entry((*a, *c)).or_insert(0);
+                *ptr += factor;
+                // CB
+                let ptr = next_pairs.entry((*c, *b)).or_insert(0);
+                *ptr += factor;
+
+                // Letters tally
+                let ptr = letters.entry(*c).or_insert(0);
+                *ptr += factor;
+            }
+        }
+        pairs = next_pairs.clone();
+    }
+
+    // Score letter tally
+    let most_frequent = letters.values().max().unwrap();
+    let least_frequent = letters.values().min().unwrap();
+    most_frequent - least_frequent
+}
+
+pub fn part_one(puzzle: &str) -> u32 {
+    let n = 10; // 10 for part 1
+
+    let mut polymer: Polymer = puzzle.split('\n').next().unwrap().parse().unwrap();
+
+    let rules: Vec<Rule> = puzzle
+        .split('\n')
+        .map(|l| l.parse())
+        .filter(|r| r.is_ok())
+        .map(|r| r.unwrap())
+        .collect();
+
+    // Apply N steps of rules
+    for _ in 0..n {
+        polymer = apply(&rules, polymer);
+    }
+
+    score(&polymer.to_string())
+}
+
+pub fn score(s: &str) -> u32 {
+    let mut counts: HashMap<char, u32> = HashMap::new();
+    for c in s.chars() {
+        let ptr = counts.entry(c).or_insert(0);
+        *ptr += 1;
+    }
+    let most_frequent = counts.values().max().unwrap();
+    let least_frequent = counts.values().min().unwrap();
+    most_frequent - least_frequent
 }
 
 #[derive(Debug, PartialEq)]
@@ -117,6 +196,63 @@ pub fn apply(rules: &Vec<Rule>, polymer: Polymer) -> Polymer {
 mod tests {
     use super::*;
     use rstest::*;
+
+    #[test]
+    fn test_score() {
+        let actual = score("NNCB");
+        let expected = 1;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_part_one() {
+        let puzzle = "NNCB
+
+CH -> B
+HH -> N
+CB -> H
+NH -> C
+HB -> C
+HC -> B
+HN -> C
+NN -> C
+BH -> H
+NC -> B
+NB -> B
+BN -> B
+BB -> N
+BC -> B
+CC -> N
+CN -> C";
+        let actual = part_one(puzzle);
+        let expected = 1588;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let puzzle = "NNCB
+
+CH -> B
+HH -> N
+CB -> H
+NH -> C
+HB -> C
+HC -> B
+HN -> C
+NN -> C
+BH -> H
+NC -> B
+NB -> B
+BN -> B
+BB -> N
+BC -> B
+CC -> N
+CN -> C";
+        let actual = part_two(puzzle);
+        let expected = 2188189693529;
+        assert_eq!(actual, expected);
+    }
 
     #[rstest]
     #[case("NNCB", Err(()))]
