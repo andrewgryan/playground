@@ -1,10 +1,12 @@
 from typing import List
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import bokeh.plotting
 from bokeh.plotting import Figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import bokeh.palettes
 
+
+# MSG
 
 @dataclass
 class AddOne:
@@ -15,22 +17,37 @@ class SubOne:
     pass
 
 @dataclass
+class HideShow:
+    pass
+
+@dataclass
 class NoOp:
     pass
 
 
-Msg = SubOne | AddOne | NoOp
+Msg = SubOne | AddOne | NoOp | HideShow
 
+
+# MODEL
 
 @dataclass
 class Model:
     resolution: int
     palette: List[str]
+    visible: bool
 
+def map_row(roots, image_driver):
+    viewers = [map_view(root, image_driver) for root in roots]
+    def inner(model):
+        for viewer in viewers:
+            viewer(model)
+    return inner
 
 def run():
-    root = map_root()
-    view = map_view(root, image_driver)
+    """Entry point"""
+    roots = [map_root(), map_root()]
+
+    view = map_row(roots, image_driver)
 
     runner = runtime(view)
     runner.send(None)
@@ -38,7 +55,7 @@ def run():
     bokeh.plotting.curdoc().add_root(
             bokeh.layouts.column(
                 control(runner),
-                root,
+                bokeh.layouts.row(*roots),
                 ))
 
 
@@ -54,7 +71,9 @@ def image_driver(resolution: int):
 
 
 def runtime(render):
+    """Continually process msg and model updates"""
     model = init()
+    render(model)
     msg = yield
     while True:
         model = update(model, msg)
@@ -63,15 +82,19 @@ def runtime(render):
 
 
 def init() -> Model:
-    return Model(4, bokeh.palettes.cividis(256))
+    """Initialize model"""
+    return Model(4, bokeh.palettes.cividis(256), True)
 
 
 def update(model, msg) -> Model:
+    """Update model given message"""
     match msg:
         case AddOne():
-            return Model(model.resolution + 1, model.palette)
+            return replace(model, resolution=model.resolution + 1)
         case SubOne():
-            return Model(model.resolution - 1, model.palette)
+            return replace(model, resolution=model.resolution - 1)
+        case HideShow():
+            return replace(model, visible=not model.visible)
         case NoOp():
             return model
 
@@ -79,20 +102,22 @@ def update(model, msg) -> Model:
 def control(runner):
     btns = {
         "+": bokeh.models.Button(label="+"),
-        "-": bokeh.models.Button(label="-")
+        "-": bokeh.models.Button(label="-"),
+        "h/s": bokeh.models.Button(label="h/s")
     }
     btns["+"].on_click(lambda: runner.send(AddOne()))
     btns["-"].on_click(lambda: runner.send(SubOne()))
-    return bokeh.layouts.row(btns["-"], btns["+"])
+    btns["h/s"].on_click(lambda: runner.send(HideShow()))
+    return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
 
 
 def map_view(figure: Figure, image_driver):
     source = bokeh.models.ColumnDataSource(data=dict(
-        x=[0],
-        y=[0],
-        dw=[1e6],
-        dh=[1e6],
-        image=[[[1,2,3],[4,5,6],[7,8,9]]]))
+        x=[],
+        y=[],
+        dw=[],
+        dh=[],
+        image=[]))
 
     glyph_renderer = figure.image(
             x="x",
@@ -106,6 +131,7 @@ def map_view(figure: Figure, image_driver):
     def view(model):
         """Called on every model update"""
         color_mapper.palette = model.palette
+        glyph_renderer.visible = model.visible
         if model.resolution > 0:
             image = image_driver(2 ** model.resolution)
             source.data = {
