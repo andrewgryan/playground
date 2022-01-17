@@ -34,24 +34,38 @@ Msg = SubOne | AddOne | NoOp | HideShow
 class Model:
     resolution: int
     palette: List[str]
-    visible: bool
+    visible: List[bool]
+
+
+def init() -> Model:
+    """Initialize model"""
+    return Model(1, bokeh.palettes.cividis(256), [True, True])
+
 
 def map_row(roots, image_driver):
-    viewers = [map_view(root, image_driver) for root in roots]
+    viewers = [image_view(root) for root in roots]
     def inner(model):
-        for viewer in viewers:
-            viewer(model)
+        if model.resolution > 0:
+            image = image_driver(2 ** model.resolution)
+        else:
+            image = []
+        for visible, viewer in zip(model.visible, viewers):
+            viewer(image, model.palette, visible)
     return inner
+
 
 def run():
     """Entry point"""
-    roots = [map_root(), map_root()]
 
+    # Configure view(s)
+    roots = [map_root(), map_root()]
     view = map_row(roots, image_driver)
 
+    # Elm architecture
     runner = runtime(view)
     runner.send(None)
 
+    # Bokeh document
     bokeh.plotting.curdoc().add_root(
             bokeh.layouts.column(
                 control(runner),
@@ -81,11 +95,6 @@ def runtime(render):
         msg = yield
 
 
-def init() -> Model:
-    """Initialize model"""
-    return Model(4, bokeh.palettes.cividis(256), True)
-
-
 def update(model, msg) -> Model:
     """Update model given message"""
     match msg:
@@ -94,7 +103,7 @@ def update(model, msg) -> Model:
         case SubOne():
             return replace(model, resolution=model.resolution - 1)
         case HideShow():
-            return replace(model, visible=not model.visible)
+            return replace(model, visible=[not visible for visible in model.visible])
         case NoOp():
             return model
 
@@ -111,7 +120,7 @@ def control(runner):
     return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
 
 
-def map_view(figure: Figure, image_driver):
+def image_view(figure: Figure):
     source = bokeh.models.ColumnDataSource(data=dict(
         x=[],
         y=[],
@@ -128,19 +137,17 @@ def map_view(figure: Figure, image_driver):
             source=source)
     color_mapper = glyph_renderer.glyph.color_mapper
 
-    def view(model):
+    def view(image, palette, visible):
         """Called on every model update"""
-        color_mapper.palette = model.palette
-        glyph_renderer.visible = model.visible
-        if model.resolution > 0:
-            image = image_driver(2 ** model.resolution)
-            source.data = {
-                "x": [0],
-                "y": [0],
-                "dw": [1e6],
-                "dh": [1e6],
-                "image": [image]
-            }
+        color_mapper.palette = palette
+        glyph_renderer.visible = visible
+        source.data = {
+            "x": [0],
+            "y": [0],
+            "dw": [1e6],
+            "dh": [1e6],
+            "image": [image]
+        }
 
     return view
 
@@ -162,13 +169,8 @@ class Setting:
 
 
 @dataclass
-class MapView:
-    pass
-
-@dataclass
 class Driver:
     setting: Setting
-    map_view: MapView
 
 @dataclass
 class Renderable:
@@ -206,7 +208,3 @@ def navigator(driver: Driver) -> Navigator:
 
 def dimensions(navigator: Navigator) -> List[Dimension]:
     return []
-
-
-def add_figure(map_view: MapView) -> Renderable:
-    pass
