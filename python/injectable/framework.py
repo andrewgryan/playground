@@ -42,15 +42,18 @@ def init() -> Model:
     return Model(1, bokeh.palettes.cividis(256), [True, True])
 
 
-def map_row(roots, image_driver):
-    viewers = [image_view(root) for root in roots]
+def map_row(roots, image_driver, circle_driver):
+    image_viewers = [image_view(root) for root in roots]
+    circle_viewers = [circle_view(root) for root in roots]
     def inner(model):
         if model.resolution > 0:
             image = image_driver(2 ** model.resolution)
         else:
             image = []
-        for visible, viewer in zip(model.visible, viewers):
-            viewer(image, model.palette, visible)
+        circle = circle_driver(model.resolution)
+        for visible, image_viewer, circle_viewer in zip(model.visible, image_viewers, circle_viewers):
+            image_viewer(image, model.palette, visible)
+            circle_viewer(circle, visible)
     return inner
 
 
@@ -59,7 +62,7 @@ def run():
 
     # Configure view(s)
     roots = [map_root(), map_root()]
-    view = map_row(roots, image_driver)
+    view = map_row(roots, image_driver, circle_driver)
 
     # Elm architecture
     runner = runtime(view)
@@ -72,6 +75,43 @@ def run():
                 bokeh.layouts.row(*roots),
                 ))
 
+def circle_driver(resolution: int):
+    import math
+    xs = []
+    ys = []
+    radius = 2e6
+    n = 2 ** resolution
+    for i in range(n + 1):
+        angle = (i / float(n)) * (2 * math.pi)
+        x = radius * math.sin(angle)
+        y = radius * math.cos(angle)
+        xs.append(x)
+        ys.append(y)
+    return {
+        "x": xs,
+        "y": ys
+    }
+
+
+def circle_view(figure: Figure):
+    source = bokeh.models.ColumnDataSource(data=dict(
+        x=[],
+        y=[],
+        dw=[],
+        dh=[],
+        image=[]))
+
+    glyph_renderer = figure.line(
+            x="x",
+            y="y",
+            source=source)
+
+    def view(data, visible):
+        """Called on every model update"""
+        glyph_renderer.visible = visible
+        source.data = data
+
+    return view
 
 def image_driver(resolution: int):
     """Generate image data at particular resolution"""
