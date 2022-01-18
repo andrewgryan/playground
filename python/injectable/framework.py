@@ -60,14 +60,14 @@ View = Callable[[Figure], Callable[[Model, bool], None]]
 
 def attach_layers(figures, viewers):
     """Wire up row of figures to drivers/views"""
-    return [[viewer(figure) for figure in figures] for viewer in viewers]
+    layers = [[viewer(figure) for figure in figures] for viewer in viewers]
 
-
-def render_layers(layers, model):
-    """React to model changes"""
-    for row in layers:
-        for visible, view in zip(model.visible, row):
-            view(model, visible)
+    def inner(model):
+        """React to model changes"""
+        for row in layers:
+            for visible, view in zip(model.visible, row):
+                view(model, visible)
+    return inner
 
 def attach_point(figures):
     sources = []
@@ -137,13 +137,13 @@ def app(runner):
                 sizing_mode="scale_width"))
 
 
-    layers = attach_layers(map_figures, datasets)
+    render_layers = attach_layers(map_figures, datasets)
     render_point = attach_point(map_figures)
     render_profile = attach_profile(profile_figure)
     render_series = attach_series(series_figure)
 
     def inner(model):
-        render_layers(layers, model)
+        render_layers(model)
         render_point(model.point)
         render_profile(model.point)
         render_series(model.point)
