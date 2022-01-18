@@ -6,6 +6,9 @@ from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import bokeh.palettes
 from bokeh.events import Tap
 from drivers import circle, image
+from bokeh.document import without_document_lock
+from threading import Thread
+import time
 
 
 # MSG
@@ -41,8 +44,16 @@ class Point:
 class TapMap:
     point: Point
 
+@dataclass
+class SetVariables:
+    variables: List[str]
 
-Msg = SubOne | AddOne | NoOp | HideShow | TapMap
+@dataclass
+class SetVariable:
+    variable: str
+
+
+Msg = SubOne | AddOne | NoOp | HideShow | TapMap | SetVariables | SetVariable
 
 
 # MODEL
@@ -54,6 +65,8 @@ class Model:
     palette: List[str] = field(default_factory=lambda: bokeh.palettes.cividis(256))
     visible: List[bool] = field(default_factory=lambda: [True, True])
     point: Optional[Point] = None
+    variables: List[str] = field(default_factory=list)
+    variable: Optional[str] = None
 
 
 def init() -> Model:
@@ -176,6 +189,21 @@ def run():
     runner.send(None)
     runner.send(app(runner))
 
+    # Simulate I/O
+    document = bokeh.plotting.curdoc()
+    thread = Thread(target=task, args=(document, runner))
+    thread.start()
+
+
+def task(document, runner):
+    time.sleep(5)
+    document.add_next_tick_callback(lambda: job(runner))
+
+
+def job(runner):
+    runner.send(SetVariables(["A", "B", "C", "D", "E"]))
+    runner.send(SetVariable("C"))
+
 
 def runtime():
     """Continually process msg and model updates"""
@@ -200,6 +228,10 @@ def update(model, msg) -> Model:
             return replace(model, visible=[not visible for visible in model.visible])
         case TapMap(point):
             return replace(model, point=point)
+        case SetVariables(variables):
+            return replace(model, variables=variables)
+        case SetVariable(variable):
+            return replace(model, variable=variable)
         case NoOp():
             return model
 
@@ -218,11 +250,21 @@ def control(runner):
 
 def navigation(runner):
     div = bokeh.models.Div()
+    dropdown = bokeh.models.Dropdown(split=True)
+
+    def on_change(event):
+        runner.send(SetVariable(event.item))
+
+    dropdown.on_event("menu_item_click", on_change)
 
     def render(model):
         div.text = f"resolution: {model.resolution}"
+        dropdown.disabled = len(model.variables) == 0
+        dropdown.menu = [(variable, variable) for variable in model.variables]
+        if model.variable is not None:
+            dropdown.label = f"Variable:\n{model.variable}"
 
-    return div, render
+    return bokeh.layouts.row(div, dropdown), render
 
 
 def map_figure(runner) -> bokeh.plotting.Figure:
