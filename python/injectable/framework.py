@@ -140,9 +140,11 @@ def app(runner):
     )
 
     # Bokeh document
+    ui_nav, render_nav = navigation(runner)
     bokeh.plotting.curdoc().add_root(
         bokeh.layouts.column(
             control(runner),
+            ui_nav,
             bokeh.layouts.row(
                 *map_figures, series_figure, profile_figure, sizing_mode="scale_width"
             ),
@@ -150,6 +152,7 @@ def app(runner):
         )
     )
 
+    # Create renderers
     render_layers = attach_layers(map_figures, datasets)
     render_point = attach_point(map_figures)
     render_profile = attach_profile(profile_figure)
@@ -160,6 +163,7 @@ def app(runner):
         render_point(model.point)
         render_profile(model.point)
         render_series(model.point)
+        render_nav(model)
 
     return inner
 
@@ -210,6 +214,15 @@ def control(runner):
     btns["-"].on_click(lambda: runner.send(SubOne()))
     btns["h/s"].on_click(lambda: runner.send(HideShow()))
     return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
+
+
+def navigation(runner):
+    div = bokeh.models.Div()
+
+    def render(model):
+        div.text = f"resolution: {model.resolution}"
+
+    return div, render
 
 
 def map_figure(runner) -> bokeh.plotting.Figure:
