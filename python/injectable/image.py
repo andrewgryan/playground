@@ -2,18 +2,22 @@ from bokeh.plotting import Figure
 import bokeh.models
 
 
-def viewer(figure):
+def dataset(driver):
     """Public interface"""
-    view = _view(figure)
 
-    def inner(model, visible):
-        data = _driver(2 ** model.resolution)
-        view(data, model.palette, visible)
+    def inner(figure):
+        view = _view(figure)
+
+        def innermost(model, visible):
+            data = driver(2 ** model.resolution)
+            view(data, model.palette, visible)
+
+        return innermost
 
     return inner
 
 
-def _driver(resolution: int):
+def driver(resolution: int):
     """Generate image data at particular resolution"""
     image = []
     for i in range(resolution):

@@ -69,28 +69,44 @@ def map_row(figures, views):
     return inner
 
 
-def run():
-    """Entry point"""
+def app(runner, datasets):
+    """Application"""
 
-    # Configure view(s)
+    # Maps on figure row
     roots = [map_root(), map_root()]
-    view = map_row(roots, [image.viewer, circle.viewer(circle.driver)])
 
-    # Elm architecture
-    runner = runtime(view)
-    runner.send(None)
+    # Placeholder for profile/time series
+    figure = bokeh.plotting.figure()
 
     # Bokeh document
     bokeh.plotting.curdoc().add_root(
             bokeh.layouts.column(
                 control(runner),
                 bokeh.layouts.row(*roots),
+                figure,
                 ))
 
+    return map_row(roots, datasets)
 
-def runtime(render):
+
+
+def run():
+    """Entry point"""
+
+    # Elm architecture
+    runner = runtime()
+    runner.send(None)
+
+    # FOREST architecture
+    datasets = [image.dataset(image.driver), circle.dataset(circle.driver)]
+    view = app(runner, datasets)
+    runner.send(view)
+
+
+def runtime():
     """Continually process msg and model updates"""
     model = init()
+    render = yield
     render(model)
     msg = yield
     while True:

@@ -3,7 +3,7 @@ import bokeh.models
 from bokeh.plotting import Figure
 
 
-def viewer(driver):
+def dataset(driver):
     """Public interface"""
 
     def inner(figure):
