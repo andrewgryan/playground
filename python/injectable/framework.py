@@ -5,8 +5,7 @@ from bokeh.plotting import Figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import bokeh.palettes
 from bokeh.events import Tap
-import circle
-import image
+from drivers import circle, image
 
 
 # MSG
