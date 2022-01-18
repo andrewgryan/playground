@@ -1,9 +1,10 @@
-from typing import List, Callable
+from typing import List, Callable, Optional
 from dataclasses import dataclass, replace
 import bokeh.plotting
 from bokeh.plotting import Figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import bokeh.palettes
+from bokeh.events import Tap
 import circle
 import image
 
@@ -26,8 +27,17 @@ class HideShow:
 class NoOp:
     pass
 
+@dataclass
+class Point:
+    x: float
+    y: float
 
-Msg = SubOne | AddOne | NoOp | HideShow
+@dataclass
+class TapMap:
+    point: Point
+
+
+Msg = SubOne | AddOne | NoOp | HideShow | TapMap
 
 
 # MODEL
@@ -37,11 +47,12 @@ class Model:
     resolution: int
     palette: List[str]
     visible: List[bool]
+    point: Optional[Point]
 
 
 def init() -> Model:
     """Initialize model"""
-    return Model(1, bokeh.palettes.cividis(256), [True, True])
+    return Model(1, bokeh.palettes.cividis(256), [True, True], None)
 
 
 View = Callable[[Figure], Callable[[Model, bool], None]]
@@ -58,36 +69,62 @@ def render_layers(layers, model):
         for visible, view in zip(model.visible, row):
             view(model, visible)
 
+def attach_point(figures):
+    sources = []
+    for figure in figures:
+        source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
+        figure.circle(x="x", y="y", size=10, source=source)
+        sources.append(source)
 
-def map_row(figures, views):
-    """High-level controller"""
-    layers = attach_layers(figures, views)
-
-    def inner(model):
-        render_layers(layers, model)
-
+    def inner(point: Optional[Point]):
+        if point is not None:
+            data = {"x": [point.x], "y": [point.y]}
+            for source in sources:
+                source.data = data
     return inner
 
 
-def app(runner, datasets):
+def attach_profile(figure):
+    source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
+    figure.circle(x="x", y="y", size=10, source=source)
+
+    def inner(point: Optional[Point]):
+        if point is not None:
+            data = {"x": [point.x], "y": [point.y]}
+            source.stream(data)
+    return inner
+
+
+def app(runner):
     """Application"""
 
+    datasets = [image.dataset(image.driver), circle.dataset(circle.driver)]
+
     # Maps on figure row
-    roots = [map_root(), map_root()]
+    map_figures = [map_figure(runner), map_figure(runner)]
+
 
     # Placeholder for profile/time series
-    figure = bokeh.plotting.figure()
+    profile_figure = bokeh.plotting.figure()
 
     # Bokeh document
     bokeh.plotting.curdoc().add_root(
             bokeh.layouts.column(
                 control(runner),
-                bokeh.layouts.row(*roots),
-                figure,
-                ))
+                bokeh.layouts.row(*map_figures, profile_figure, sizing_mode="scale_width"),
+                sizing_mode="scale_width"))
 
-    return map_row(roots, datasets)
 
+    layers = attach_layers(map_figures, datasets)
+    render_point = attach_point(map_figures)
+    render_profile = attach_profile(profile_figure)
+
+    def inner(model):
+        render_layers(layers, model)
+        render_point(model.point)
+        render_profile(model.point)
+
+    return inner
 
 
 def run():
@@ -96,11 +133,7 @@ def run():
     # Elm architecture
     runner = runtime()
     runner.send(None)
-
-    # FOREST architecture
-    datasets = [image.dataset(image.driver), circle.dataset(circle.driver)]
-    view = app(runner, datasets)
-    runner.send(view)
+    runner.send(app(runner))
 
 
 def runtime():
@@ -124,6 +157,8 @@ def update(model, msg) -> Model:
             return replace(model, resolution=model.resolution - 1)
         case HideShow():
             return replace(model, visible=[not visible for visible in model.visible])
+        case TapMap(point):
+            return replace(model, point=point)
         case NoOp():
             return model
 
@@ -140,7 +175,7 @@ def control(runner):
     return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
 
 
-def map_root() -> bokeh.plotting.Figure:
+def map_figure(runner) -> bokeh.plotting.Figure:
     figure = bokeh.plotting.figure(
             x_range=(-2e6, 2e6),
             y_range=(-2e6, 2e6),
@@ -149,6 +184,13 @@ def map_root() -> bokeh.plotting.Figure:
             )
     provider = get_provider(CARTODBPOSITRON)
     figure.add_tile(provider)
+
+    # Add Tap event
+    def callback(event):
+        runner.send(TapMap(Point(event.x, event.y)))
+
+    figure.on_event(Tap, callback)
+
     return figure
 
 @dataclass
@@ -166,11 +208,6 @@ class Renderable:
 
 @dataclass
 class Navigator:
-    pass
-
-
-@dataclass
-class Point:
     pass
 
 
