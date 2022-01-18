@@ -4,6 +4,8 @@ import bokeh.plotting
 from bokeh.plotting import Figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import bokeh.palettes
+import circle
+import image
 
 
 # MSG
@@ -46,10 +48,12 @@ View = Callable[[Figure], Callable[[Model, bool], None]]
 
 
 def attach_layers(figures, viewers):
+    """Wire up row of figures to drivers/views"""
     return [[viewer(figure) for figure in figures] for viewer in viewers]
 
 
 def render_layers(layers, model):
+    """React to model changes"""
     for row in layers:
         for visible, view in zip(model.visible, row):
             view(model, visible)
@@ -70,7 +74,7 @@ def run():
 
     # Configure view(s)
     roots = [map_root(), map_root()]
-    view = map_row(roots, [image_viewer, circle_viewer])
+    view = map_row(roots, [image.viewer, circle.viewer])
 
     # Elm architecture
     runner = runtime(view)
@@ -82,52 +86,6 @@ def run():
                 control(runner),
                 bokeh.layouts.row(*roots),
                 ))
-
-def circle_viewer(figure):
-    view = circle_view(figure)
-    def inner(model, visible):
-        data = circle_driver(model.resolution)
-        view(data, visible)
-
-    return inner
-
-def circle_driver(resolution: int):
-    import math
-    xs = []
-    ys = []
-    radius = 2e6
-    n = 2 ** resolution
-    for i in range(n + 1):
-        angle = (i / float(n)) * (2 * math.pi)
-        x = radius * math.sin(angle)
-        y = radius * math.cos(angle)
-        xs.append(x)
-        ys.append(y)
-    return {
-        "x": xs,
-        "y": ys
-    }
-
-
-def circle_view(figure: Figure):
-    source = bokeh.models.ColumnDataSource(data=dict(
-        x=[],
-        y=[],
-        dw=[],
-        dh=[],
-        image=[]))
-
-    glyph_renderer = figure.line(
-            x="x",
-            y="y",
-            source=source)
-
-    def view(data, visible):
-        """Called on every model update"""
-        glyph_renderer.visible = visible
-        source.data = data
-
-    return view
 
 
 def runtime(render):
@@ -164,58 +122,6 @@ def control(runner):
     btns["-"].on_click(lambda: runner.send(SubOne()))
     btns["h/s"].on_click(lambda: runner.send(HideShow()))
     return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
-
-
-def image_viewer(figure):
-    view = image_view(figure)
-
-    def inner(model, visible):
-        data = image_driver(2 ** model.resolution)
-        view(data, model.palette, visible)
-
-    return inner
-
-
-def image_driver(resolution: int):
-    """Generate image data at particular resolution"""
-    image = []
-    for i in range(resolution):
-        row = []
-        for j in range(resolution):
-            row.append(i + j)
-        image.append(row)
-    return image
-
-def image_view(figure: Figure):
-    source = bokeh.models.ColumnDataSource(data=dict(
-        x=[],
-        y=[],
-        dw=[],
-        dh=[],
-        image=[]))
-
-    glyph_renderer = figure.image(
-            x="x",
-            y="y",
-            dw="dw",
-            dh="dh",
-            image="image",
-            source=source)
-    color_mapper = glyph_renderer.glyph.color_mapper
-
-    def view(image, palette, visible):
-        """Called on every model update"""
-        color_mapper.palette = palette
-        glyph_renderer.visible = visible
-        source.data = {
-            "x": [0],
-            "y": [0],
-            "dw": [1e6],
-            "dh": [1e6],
-            "image": [image]
-        }
-
-    return view
 
 
 def map_root() -> bokeh.plotting.Figure:
