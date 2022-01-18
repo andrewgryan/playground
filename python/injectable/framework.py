@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable
 from dataclasses import dataclass, replace
 import bokeh.plotting
 from bokeh.plotting import Figure
@@ -42,18 +42,26 @@ def init() -> Model:
     return Model(1, bokeh.palettes.cividis(256), [True, True])
 
 
-def map_row(roots, image_driver, circle_driver):
-    image_viewers = [image_view(root) for root in roots]
-    circle_viewers = [circle_view(root) for root in roots]
+View = Callable[[Figure], Callable[[Model, bool], None]]
+
+
+def attach_layers(figures, viewers):
+    return [[viewer(figure) for figure in figures] for viewer in viewers]
+
+
+def render_layers(layers, model):
+    for row in layers:
+        for visible, view in zip(model.visible, row):
+            view(model, visible)
+
+
+def map_row(figures, views):
+    """High-level controller"""
+    layers = attach_layers(figures, views)
+
     def inner(model):
-        if model.resolution > 0:
-            image = image_driver(2 ** model.resolution)
-        else:
-            image = []
-        circle = circle_driver(model.resolution)
-        for visible, image_viewer, circle_viewer in zip(model.visible, image_viewers, circle_viewers):
-            image_viewer(image, model.palette, visible)
-            circle_viewer(circle, visible)
+        render_layers(layers, model)
+
     return inner
 
 
@@ -62,7 +70,7 @@ def run():
 
     # Configure view(s)
     roots = [map_root(), map_root()]
-    view = map_row(roots, image_driver, circle_driver)
+    view = map_row(roots, [image_viewer, circle_viewer])
 
     # Elm architecture
     runner = runtime(view)
@@ -74,6 +82,14 @@ def run():
                 control(runner),
                 bokeh.layouts.row(*roots),
                 ))
+
+def circle_viewer(figure):
+    view = circle_view(figure)
+    def inner(model, visible):
+        data = circle_driver(model.resolution)
+        view(data, visible)
+
+    return inner
 
 def circle_driver(resolution: int):
     import math
@@ -113,16 +129,6 @@ def circle_view(figure: Figure):
 
     return view
 
-def image_driver(resolution: int):
-    """Generate image data at particular resolution"""
-    image = []
-    for i in range(resolution):
-        row = []
-        for j in range(resolution):
-            row.append(i + j)
-        image.append(row)
-    return image
-
 
 def runtime(render):
     """Continually process msg and model updates"""
@@ -159,6 +165,26 @@ def control(runner):
     btns["h/s"].on_click(lambda: runner.send(HideShow()))
     return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
 
+
+def image_viewer(figure):
+    view = image_view(figure)
+
+    def inner(model, visible):
+        data = image_driver(2 ** model.resolution)
+        view(data, model.palette, visible)
+
+    return inner
+
+
+def image_driver(resolution: int):
+    """Generate image data at particular resolution"""
+    image = []
+    for i in range(resolution):
+        row = []
+        for j in range(resolution):
+            row.append(i + j)
+        image.append(row)
+    return image
 
 def image_view(figure: Figure):
     source = bokeh.models.ColumnDataSource(data=dict(
