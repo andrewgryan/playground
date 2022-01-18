@@ -74,7 +74,7 @@ def run():
 
     # Configure view(s)
     roots = [map_root(), map_root()]
-    view = map_row(roots, [image.viewer, circle.viewer])
+    view = map_row(roots, [image.viewer, circle.viewer(circle.driver)])
 
     # Elm architecture
     runner = runtime(view)

@@ -3,19 +3,23 @@ import bokeh.models
 from bokeh.plotting import Figure
 
 
-def viewer(figure):
+def viewer(driver):
     """Public interface"""
-    view = _view(figure)
 
-    def inner(model, visible):
-        data = _driver(model.resolution)
-        view(data, visible)
+    def inner(figure):
+        view = _view(figure)
+
+        def innermost(model, visible):
+            data = driver(model.resolution)
+            view(data, visible)
+
+        return innermost
 
     return inner
 
 
-def _driver(resolution: int):
-    """Private driver"""
+def driver(resolution: int):
+    """Public driver"""
     xs = []
     ys = []
     radius = 2e6
