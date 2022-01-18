@@ -10,26 +10,32 @@ from drivers import circle, image
 
 # MSG
 
+
 @dataclass
 class AddOne:
     pass
+
 
 @dataclass
 class SubOne:
     pass
 
+
 @dataclass
 class HideShow:
     pass
+
 
 @dataclass
 class NoOp:
     pass
 
+
 @dataclass
 class Point:
     x: float
     y: float
+
 
 @dataclass
 class TapMap:
@@ -40,6 +46,7 @@ Msg = SubOne | AddOne | NoOp | HideShow | TapMap
 
 
 # MODEL
+
 
 @dataclass
 class Model:
@@ -66,12 +73,14 @@ def attach_layers(figures, viewers):
         for row in layers:
             for visible, view in zip(model.visible, row):
                 view(model, visible)
+
     return inner
+
 
 def attach_point(figures):
     sources = []
     for figure in figures:
-        source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
+        source = bokeh.models.ColumnDataSource(data={"x": [], "y": []})
         figure.circle(x="x", y="y", size=5, source=source)
         sources.append(source)
 
@@ -80,11 +89,12 @@ def attach_point(figures):
             data = {"x": [point.x], "y": [point.y]}
             for source in sources:
                 source.data = data
+
     return inner
 
 
 def attach_profile(figure):
-    source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
+    source = bokeh.models.ColumnDataSource(data={"x": [], "y": []})
     figure.circle(x="x", y="y", size=5, color="red", source=source)
     figure.line(x="x", y="y", color="red", source=source)
 
@@ -92,13 +102,14 @@ def attach_profile(figure):
         if point is not None:
             data = {"x": [point.x], "y": [point.y]}
             source.stream(data)
+
     return inner
 
 
 def attach_series(figure):
     import datetime
 
-    source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
+    source = bokeh.models.ColumnDataSource(data={"x": [], "y": []})
     figure.circle(x="x", y="y", size=5, color="red", source=source)
     figure.line(x="x", y="y", color="red", source=source)
 
@@ -106,6 +117,7 @@ def attach_series(figure):
         if point is not None:
             data = {"x": [datetime.datetime.now()], "y": [point.y]}
             source.stream(data)
+
     return inner
 
 
@@ -117,24 +129,26 @@ def app(runner):
     # Maps on figure row
     map_figures = [map_figure(runner), map_figure(runner)]
 
-
     # Placeholder for profile/time series
     series_figure = bokeh.plotting.figure(
-            x_axis_type="datetime",
-            y_axis_type="mercator",
-            )
+        x_axis_type="datetime",
+        y_axis_type="mercator",
+    )
     profile_figure = bokeh.plotting.figure(
-            x_axis_type="mercator",
-            y_axis_type="mercator",
-            )
+        x_axis_type="mercator",
+        y_axis_type="mercator",
+    )
 
     # Bokeh document
     bokeh.plotting.curdoc().add_root(
-            bokeh.layouts.column(
-                control(runner),
-                bokeh.layouts.row(*map_figures, series_figure, profile_figure, sizing_mode="scale_width"),
-                sizing_mode="scale_width"))
-
+        bokeh.layouts.column(
+            control(runner),
+            bokeh.layouts.row(
+                *map_figures, series_figure, profile_figure, sizing_mode="scale_width"
+            ),
+            sizing_mode="scale_width",
+        )
+    )
 
     render_layers = attach_layers(map_figures, datasets)
     render_point = attach_point(map_figures)
@@ -190,7 +204,7 @@ def control(runner):
     btns = {
         "+": bokeh.models.Button(label="+"),
         "-": bokeh.models.Button(label="-"),
-        "h/s": bokeh.models.Button(label="h/s")
+        "h/s": bokeh.models.Button(label="h/s"),
     }
     btns["+"].on_click(lambda: runner.send(AddOne()))
     btns["-"].on_click(lambda: runner.send(SubOne()))
@@ -200,11 +214,11 @@ def control(runner):
 
 def map_figure(runner) -> bokeh.plotting.Figure:
     figure = bokeh.plotting.figure(
-            x_range=(-2e6, 2e6),
-            y_range=(-2e6, 2e6),
-            x_axis_type="mercator",
-            y_axis_type="mercator",
-            )
+        x_range=(-2e6, 2e6),
+        y_range=(-2e6, 2e6),
+        x_axis_type="mercator",
+        y_axis_type="mercator",
+    )
     provider = get_provider(CARTODBPOSITRON)
     figure.add_tile(provider)
 
