@@ -1,5 +1,5 @@
 from typing import List, Callable, Optional
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, replace, field
 import bokeh.plotting
 from bokeh.plotting import Figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
@@ -44,15 +44,15 @@ Msg = SubOne | AddOne | NoOp | HideShow | TapMap
 
 @dataclass
 class Model:
-    resolution: int
-    palette: List[str]
-    visible: List[bool]
-    point: Optional[Point]
+    resolution: int = 1
+    palette: List[str] = field(default_factory=lambda: bokeh.palettes.cividis(256))
+    visible: List[bool] = field(default_factory=lambda: [True, True])
+    point: Optional[Point] = None
 
 
 def init() -> Model:
     """Initialize model"""
-    return Model(1, bokeh.palettes.cividis(256), [True, True], None)
+    return Model()
 
 
 View = Callable[[Figure], Callable[[Model, bool], None]]
@@ -73,7 +73,7 @@ def attach_point(figures):
     sources = []
     for figure in figures:
         source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
-        figure.circle(x="x", y="y", size=10, source=source)
+        figure.circle(x="x", y="y", size=5, source=source)
         sources.append(source)
 
     def inner(point: Optional[Point]):
@@ -86,11 +86,26 @@ def attach_point(figures):
 
 def attach_profile(figure):
     source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
-    figure.circle(x="x", y="y", size=10, source=source)
+    figure.circle(x="x", y="y", size=5, color="red", source=source)
+    figure.line(x="x", y="y", color="red", source=source)
 
     def inner(point: Optional[Point]):
         if point is not None:
             data = {"x": [point.x], "y": [point.y]}
+            source.stream(data)
+    return inner
+
+
+def attach_series(figure):
+    import datetime
+
+    source = bokeh.models.ColumnDataSource(data={"x":[], "y": []})
+    figure.circle(x="x", y="y", size=5, color="red", source=source)
+    figure.line(x="x", y="y", color="red", source=source)
+
+    def inner(point: Optional[Point]):
+        if point is not None:
+            data = {"x": [datetime.datetime.now()], "y": [point.y]}
             source.stream(data)
     return inner
 
@@ -105,24 +120,33 @@ def app(runner):
 
 
     # Placeholder for profile/time series
-    profile_figure = bokeh.plotting.figure()
+    series_figure = bokeh.plotting.figure(
+            x_axis_type="datetime",
+            y_axis_type="mercator",
+            )
+    profile_figure = bokeh.plotting.figure(
+            x_axis_type="mercator",
+            y_axis_type="mercator",
+            )
 
     # Bokeh document
     bokeh.plotting.curdoc().add_root(
             bokeh.layouts.column(
                 control(runner),
-                bokeh.layouts.row(*map_figures, profile_figure, sizing_mode="scale_width"),
+                bokeh.layouts.row(*map_figures, series_figure, profile_figure, sizing_mode="scale_width"),
                 sizing_mode="scale_width"))
 
 
     layers = attach_layers(map_figures, datasets)
     render_point = attach_point(map_figures)
     render_profile = attach_profile(profile_figure)
+    render_series = attach_series(series_figure)
 
     def inner(model):
         render_layers(layers, model)
         render_point(model.point)
         render_profile(model.point)
+        render_series(model.point)
 
     return inner
 
