@@ -5,17 +5,23 @@ from bokeh.plotting import Figure
 
 def dataset(driver):
     """Public interface"""
+    source = bokeh.models.ColumnDataSource(
+        data=dict(x=[], y=[], dw=[], dh=[], image=[])
+    )
 
-    def inner(figure):
-        view = _view(figure)
+    def update(model):
+        print(model.variable)
+        source.data = driver(model.resolution)
 
-        def innermost(model, visible):
-            data = driver(model.resolution)
-            view(data, visible)
+    def add_figure(figure):
+        glyph_renderer = figure.line(x="x", y="y", source=source)
 
-        return innermost
+        def show(visible):
+            glyph_renderer.visible = visible
 
-    return inner
+        return show
+
+    return update, add_figure
 
 
 def driver(resolution: int):
@@ -31,19 +37,3 @@ def driver(resolution: int):
         xs.append(x)
         ys.append(y)
     return {"x": xs, "y": ys}
-
-
-def _view(figure: Figure):
-    """Private view"""
-    source = bokeh.models.ColumnDataSource(
-        data=dict(x=[], y=[], dw=[], dh=[], image=[])
-    )
-
-    glyph_renderer = figure.line(x="x", y="y", source=source)
-
-    def view(data, visible):
-        """Called on every model update"""
-        glyph_renderer.visible = visible
-        source.data = data
-
-    return view

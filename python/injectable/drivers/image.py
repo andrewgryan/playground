@@ -4,17 +4,36 @@ import bokeh.models
 
 def dataset(driver):
     """Public interface"""
+    source = bokeh.models.ColumnDataSource(
+        data=dict(x=[], y=[], dw=[], dh=[], image=[])
+    )
+    color_mappers = []
 
-    def inner(figure):
-        view = _view(figure)
+    def update(model):
+        image = driver(2 ** model.resolution)
+        source.data = {
+            "x": [0],
+            "y": [0],
+            "dw": [1e6],
+            "dh": [1e6],
+            "image": [image],
+        }
+        if model.palette is not None:
+            for color_mapper in color_mappers:
+                color_mapper.palette = model.palette
 
-        def innermost(model, visible):
-            data = driver(2 ** model.resolution)
-            view(data, model.palette, visible)
+    def add_figure(figure):
+        glyph_renderer = figure.image(
+            x="x", y="y", dw="dw", dh="dh", image="image", source=source
+        )
+        color_mappers.append(glyph_renderer.glyph.color_mapper)
 
-        return innermost
+        def show(visible):
+            glyph_renderer.visible = visible
 
-    return inner
+        return show
+
+    return update, add_figure
 
 
 def driver(resolution: int):
@@ -26,28 +45,3 @@ def driver(resolution: int):
             row.append(i + j)
         image.append(row)
     return image
-
-
-def _view(figure: Figure):
-    source = bokeh.models.ColumnDataSource(
-        data=dict(x=[], y=[], dw=[], dh=[], image=[])
-    )
-
-    glyph_renderer = figure.image(
-        x="x", y="y", dw="dw", dh="dh", image="image", source=source
-    )
-    color_mapper = glyph_renderer.glyph.color_mapper
-
-    def view(image, palette, visible):
-        """Called on every model update"""
-        color_mapper.palette = palette
-        glyph_renderer.visible = visible
-        source.data = {
-            "x": [0],
-            "y": [0],
-            "dw": [1e6],
-            "dh": [1e6],
-            "image": [image],
-        }
-
-    return view

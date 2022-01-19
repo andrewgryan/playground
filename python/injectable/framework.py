@@ -87,13 +87,15 @@ View = Callable[[Figure], Callable[[Model, bool], None]]
 
 def attach_layers(figures, viewers):
     """Wire up row of figures to drivers/views"""
-    layers = [[viewer(figure) for figure in figures] for viewer in viewers]
+        
+    layers = [(update, [add_figure(figure) for figure in figures]) for update, add_figure in viewers]
 
     def inner(model):
         """React to model changes"""
-        for row in layers:
-            for visible, view in zip(model.visible, row):
-                view(model, visible)
+        for update, row in layers:
+            update(model)
+            for visible, show in zip(model.visible, row):
+                show(visible)
 
     return inner
 
