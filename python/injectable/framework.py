@@ -1,5 +1,5 @@
 import yaml
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Dict
 from dataclasses import dataclass, replace, field
 import bokeh.plotting
 from bokeh.plotting import Figure
@@ -52,7 +52,8 @@ class TapMap:
 
 @dataclass
 class SetVariables:
-    variables: List[str]
+    label: str
+    variables: Dict[str, List[str]]
 
 
 @dataclass
@@ -72,7 +73,7 @@ class Model:
     palette: List[str] = field(default_factory=lambda: bokeh.palettes.cividis(256))
     visible: List[bool] = field(default_factory=lambda: [True, True])
     point: Optional[Point] = None
-    variables: List[str] = field(default_factory=list)
+    variables: Dict[str, List[str]] = field(default_factory=dict)
     variable: Optional[str] = None
 
 
@@ -190,7 +191,7 @@ def app(document, send_msg):
 
 @dataclass
 class Config:
-    file_name: str
+    file_names: List[str]
 
 
 def run():
@@ -207,8 +208,9 @@ def run():
     runner.send(gen.coroutine(view))
 
     # Simulate I/O
-    thread = Thread(target=task, args=(runner.send, config.file_name))
-    thread.start()
+    for file_name in config.file_names:
+        thread = Thread(target=get_variables, args=(runner.send, file_name))
+        thread.start()
 
 
 def runtime(document):
@@ -224,18 +226,15 @@ def runtime(document):
         msg = yield
 
 
-@without_document_lock
-def task(send_msg, file_name):
+def get_variables(send_msg, file_name):
     import xarray
-    import time
-    time.sleep(10)
 
+    # Perform I/O
     ds = xarray.open_dataset(file_name)
     variables = sorted(ds.data_vars)
-    variable = variables[0]
 
-    send_msg(SetVariables(variables))
-    send_msg(SetVariable(variable))
+    # Send data to application
+    send_msg(SetVariables(file_name, variables))
 
 
 def update(model, msg) -> Model:
@@ -249,8 +248,9 @@ def update(model, msg) -> Model:
             return replace(model, visible=[not visible for visible in model.visible])
         case TapMap(point):
             return replace(model, point=point)
-        case SetVariables(variables):
-            return replace(model, variables=variables)
+        case SetVariables(label, variables):
+            model.variables[label] = variables  # Note: in-place modification
+            return model
         case SetVariable(variable):
             return replace(model, variable=variable)
         case NoOp():
