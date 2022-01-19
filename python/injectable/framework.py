@@ -6,7 +6,7 @@ from bokeh.plotting import Figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import bokeh.palettes
 from bokeh.events import Tap
-from drivers import circle, image
+from drivers import circle, image, niwa
 from bokeh.document import without_document_lock
 from threading import Thread
 import threading
@@ -147,7 +147,11 @@ def attach_series(figure):
 def app(document, send_msg):
     """Application"""
 
-    datasets = [image.dataset(image.driver), circle.dataset(circle.driver)]
+    # Dataset/Driver API
+    datasets = []
+    config = Config(**yaml.safe_load(open("config.yaml")))
+    for file_name in config.file_names:
+        datasets.append(niwa.dataset(file_name))
 
     # Maps on figure row
     map_figures = [map_figure(send_msg), map_figure(send_msg)]
