@@ -1,3 +1,4 @@
+import yaml
 from typing import List, Callable, Optional
 from dataclasses import dataclass, replace, field
 import bokeh.plotting
@@ -8,7 +9,9 @@ from bokeh.events import Tap
 from drivers import circle, image
 from bokeh.document import without_document_lock
 from threading import Thread
+import threading
 import time
+from queue import Queue
 
 
 # MSG
@@ -44,9 +47,11 @@ class Point:
 class TapMap:
     point: Point
 
+
 @dataclass
 class SetVariables:
     variables: List[str]
+
 
 @dataclass
 class SetVariable:
@@ -134,13 +139,13 @@ def attach_series(figure):
     return inner
 
 
-def app(runner):
+def app(document, send_msg):
     """Application"""
 
     datasets = [image.dataset(image.driver), circle.dataset(circle.driver)]
 
     # Maps on figure row
-    map_figures = [map_figure(runner), map_figure(runner)]
+    map_figures = [map_figure(send_msg), map_figure(send_msg)]
 
     # Placeholder for profile/time series
     series_figure = bokeh.plotting.figure(
@@ -153,10 +158,10 @@ def app(runner):
     )
 
     # Bokeh document
-    ui_nav, render_nav = navigation(runner)
-    bokeh.plotting.curdoc().add_root(
+    ui_nav, render_nav = navigation(send_msg)
+    document.add_root(
         bokeh.layouts.column(
-            control(runner),
+            control(send_msg),
             ui_nav,
             bokeh.layouts.row(
                 *map_figures, series_figure, profile_figure, sizing_mode="scale_width"
@@ -181,28 +186,43 @@ def app(runner):
     return inner
 
 
+@dataclass
+class Config:
+    file_name: str
+
+
+def send_msg(msg):
+    print(msg)
+
+
 def run():
     """Entry point"""
+    config = Config(**yaml.safe_load(open("config.yaml")))
+
+    # Bokeh document lock across threads
+    document = bokeh.plotting.curdoc()
+
+    view = app(document, send_msg)
 
     # Elm architecture
     runner = runtime()
     runner.send(None)
-    runner.send(app(runner))
+    runner.send(view)
 
     # Simulate I/O
-    document = bokeh.plotting.curdoc()
-    thread = Thread(target=task, args=(document, runner))
+    thread = Thread(target=task, args=(send_msg, config.file_name))
     thread.start()
 
 
-def task(document, runner):
-    time.sleep(5)
-    document.add_next_tick_callback(lambda: job(runner))
+def task(send_msg, file_name):
+    import xarray
 
+    ds = xarray.open_dataset(file_name)
+    variables = sorted(ds.data_vars)
+    variable = variables[0]
 
-def job(runner):
-    runner.send(SetVariables(["A", "B", "C", "D", "E"]))
-    runner.send(SetVariable("C"))
+    send_msg(SetVariables(variables))
+    send_msg(SetVariable(variable))
 
 
 def runtime():
@@ -236,38 +256,40 @@ def update(model, msg) -> Model:
             return model
 
 
-def control(runner):
+def control(send_msg):
     btns = {
         "+": bokeh.models.Button(label="+"),
         "-": bokeh.models.Button(label="-"),
         "h/s": bokeh.models.Button(label="h/s"),
     }
-    btns["+"].on_click(lambda: runner.send(AddOne()))
-    btns["-"].on_click(lambda: runner.send(SubOne()))
-    btns["h/s"].on_click(lambda: runner.send(HideShow()))
+    btns["+"].on_click(lambda: send_msg(AddOne()))
+    btns["-"].on_click(lambda: send_msg(SubOne()))
+    btns["h/s"].on_click(lambda: send_msg(HideShow()))
     return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
 
 
-def navigation(runner):
+def navigation(send_msg):
     div = bokeh.models.Div()
-    dropdown = bokeh.models.Dropdown(split=True)
+    select = bokeh.models.Select()
 
-    def on_change(event):
-        runner.send(SetVariable(event.item))
+    def on_change(attr, old, new):
+        print(attr, old, new)
+        send_msg(SetVariable(new))
 
-    dropdown.on_event("menu_item_click", on_change)
+    select.on_change("value", on_change)
 
     def render(model):
         div.text = f"resolution: {model.resolution}"
-        dropdown.disabled = len(model.variables) == 0
-        dropdown.menu = [(variable, variable) for variable in model.variables]
+        select.disabled = len(model.variables) == 0
+        select.options = model.variables
         if model.variable is not None:
-            dropdown.label = f"Variable:\n{model.variable}"
+            if model.variable != select.value:
+                select.value = model.variable
 
-    return bokeh.layouts.row(div, dropdown), render
+    return bokeh.layouts.row(div, select), render
 
 
-def map_figure(runner) -> bokeh.plotting.Figure:
+def map_figure(send_msg) -> bokeh.plotting.Figure:
     figure = bokeh.plotting.figure(
         x_range=(-2e6, 2e6),
         y_range=(-2e6, 2e6),
@@ -279,7 +301,7 @@ def map_figure(runner) -> bokeh.plotting.Figure:
 
     # Add Tap event
     def callback(event):
-        runner.send(TapMap(Point(event.x, event.y)))
+        send_msg(TapMap(Point(event.x, event.y)))
 
     figure.on_event(Tap, callback)
 
