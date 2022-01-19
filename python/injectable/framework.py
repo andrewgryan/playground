@@ -12,6 +12,8 @@ from threading import Thread
 import threading
 import time
 from queue import Queue
+from tornado import gen
+from functools import partial
 
 
 # MSG
@@ -191,10 +193,6 @@ class Config:
     file_name: str
 
 
-def send_msg(msg):
-    print(msg)
-
-
 def run():
     """Entry point"""
     config = Config(**yaml.safe_load(open("config.yaml")))
@@ -202,20 +200,35 @@ def run():
     # Bokeh document lock across threads
     document = bokeh.plotting.curdoc()
 
-    view = app(document, send_msg)
-
     # Elm architecture
-    runner = runtime()
+    runner = runtime(document)
     runner.send(None)
-    runner.send(view)
+    view = app(document, runner.send)
+    runner.send(gen.coroutine(view))
 
     # Simulate I/O
-    thread = Thread(target=task, args=(send_msg, config.file_name))
+    thread = Thread(target=task, args=(runner.send, config.file_name))
     thread.start()
 
 
+def runtime(document):
+    """Continually process msg and model updates"""
+    model = init()
+    render = yield
+    render(model)
+    msg = yield
+    while True:
+        print(msg)
+        model = update(model, msg)
+        document.add_next_tick_callback(partial(render, model))
+        msg = yield
+
+
+@without_document_lock
 def task(send_msg, file_name):
     import xarray
+    import time
+    time.sleep(10)
 
     ds = xarray.open_dataset(file_name)
     variables = sorted(ds.data_vars)
@@ -223,18 +236,6 @@ def task(send_msg, file_name):
 
     send_msg(SetVariables(variables))
     send_msg(SetVariable(variable))
-
-
-def runtime():
-    """Continually process msg and model updates"""
-    model = init()
-    render = yield
-    render(model)
-    msg = yield
-    while True:
-        model = update(model, msg)
-        render(model)
-        msg = yield
 
 
 def update(model, msg) -> Model:
@@ -273,7 +274,6 @@ def navigation(send_msg):
     select = bokeh.models.Select()
 
     def on_change(attr, old, new):
-        print(attr, old, new)
         send_msg(SetVariable(new))
 
     select.on_change("value", on_change)
