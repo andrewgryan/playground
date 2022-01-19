@@ -61,7 +61,13 @@ class SetVariable:
     variable: str
 
 
-Msg = SubOne | AddOne | NoOp | HideShow | TapMap | SetVariables | SetVariable
+@dataclass
+class SetLayer:
+    side: str
+    variables: List[str]
+
+
+Msg = SubOne | AddOne | NoOp | HideShow | TapMap | SetVariables | SetVariable | SetLayer
 
 
 # MODEL
@@ -75,6 +81,8 @@ class Model:
     point: Optional[Point] = None
     variables: Dict[str, List[str]] = field(default_factory=dict)
     variable: Optional[str] = None
+    left: List[str] = field(default_factory=list)
+    right: List[str] = field(default_factory=list)
 
 
 def init() -> Model:
@@ -170,10 +178,14 @@ def app(document, send_msg):
     ui_nav, render_nav = navigation(send_msg)
     document.add_root(
         bokeh.layouts.column(
-            control(send_msg),
             ui_nav,
+        bokeh.layouts.column(
             bokeh.layouts.row(
-                *map_figures, series_figure, profile_figure, sizing_mode="scale_width"
+                *map_figures, sizing_mode="scale_width"
+            ),
+            bokeh.layouts.row(
+                series_figure, profile_figure, sizing_mode="scale_width"
+            ),
             ),
             sizing_mode="scale_width",
         )
@@ -243,7 +255,7 @@ def get_variables(send_msg, file_name):
     send_msg(SetVariables(file_name, variables))
 
 
-def update(model, msg) -> Model:
+def update(model, msg: Msg) -> Model:
     """Update model given message"""
     match msg:
         case AddOne():
@@ -259,24 +271,16 @@ def update(model, msg) -> Model:
             return model
         case SetVariable(variable):
             return replace(model, variable=variable)
+        case SetLayer(side, variables):
+            if side == "left":
+                return replace(model, left=variables)
+            elif side == "right":
+                return replace(model, right=variables)
         case NoOp():
             return model
 
 
-def control(send_msg):
-    btns = {
-        "+": bokeh.models.Button(label="+"),
-        "-": bokeh.models.Button(label="-"),
-        "h/s": bokeh.models.Button(label="h/s"),
-    }
-    btns["+"].on_click(lambda: send_msg(AddOne()))
-    btns["-"].on_click(lambda: send_msg(SubOne()))
-    btns["h/s"].on_click(lambda: send_msg(HideShow()))
-    return bokeh.layouts.row(btns["-"], btns["+"], btns["h/s"])
-
-
 def navigation(send_msg):
-    div = bokeh.models.Div()
     select = bokeh.models.Select()
 
     def on_change(attr, old, new):
@@ -284,15 +288,45 @@ def navigation(send_msg):
 
     select.on_change("value", on_change)
 
+    # Multi-select visibility
+    multi_left = bokeh.models.MultiChoice()
+    multi_left_vars = bokeh.models.MultiChoice()
+
+    multi_right = bokeh.models.MultiChoice()
+    multi_right_vars = bokeh.models.MultiChoice()
+
+    def on_multi(side):
+        def wrapper(attr, old, new):
+            send_msg(SetLayer(side, new))
+        return wrapper
+
+    multi_right.on_change("value", on_multi("right"))
+    multi_right_vars.on_change("value", on_multi("right"))
+    multi_left.on_change("value", on_multi("left"))
+    multi_left_vars.on_change("value", on_multi("left"))
+
     def render(model):
-        div.text = f"resolution: {model.resolution}"
         select.disabled = len(model.variables) == 0
         select.options = model.variables
         if model.variable is not None:
             if model.variable != select.value:
                 select.value = model.variable
 
-    return bokeh.layouts.row(div, select), render
+        # Dataset names
+        if model.variables is not None:
+            vars = []
+            for items in model.variables.values():
+               vars += items
+            vars = sorted(set(vars))
+
+            multi_left.options = list(model.variables.keys())
+            multi_right.options = list(model.variables.keys())
+            multi_left_vars.options = vars
+            multi_right_vars.options = vars
+
+    return bokeh.layouts.row(select,
+            bokeh.layouts.column(multi_left, multi_left_vars),
+            bokeh.layouts.column(multi_right, multi_right_vars)), render
 
 
 def map_figure(send_msg) -> bokeh.plotting.Figure:
