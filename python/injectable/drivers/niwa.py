@@ -13,12 +13,12 @@ def dataset(file_name: str):
     )
     color_mappers = []
 
-    def update(model):
+    def update(variable, palette):
         """React to model changes"""
-        print(f"{file_name}: {model.variable}")
-        if model.variable is not None:
-            if model.variable in ds.data_vars:
-                data_array = ds.data_vars[model.variable]
+        print(f"{file_name}: {variable}")
+        if variable is not None:
+            if variable in ds.data_vars:
+                data_array = ds.data_vars[variable]
                 print(data_array)
                 if data_array.ndim == 3:
                     image = data_array[0].to_numpy()
@@ -38,9 +38,9 @@ def dataset(file_name: str):
                         "dh": [1e6],
                         "image": [image],
                     }
-        if model.palette is not None:
+        if palette is not None:
             for color_mapper in color_mappers:
-                color_mapper.palette = model.palette
+                color_mapper.palette = palette
 
     def add_figure(figure):
         """Register graphical representation with figure"""
@@ -55,4 +55,9 @@ def dataset(file_name: str):
 
         return show
 
-    return update, add_figure
+    # return update, add_figure
+    def wrapper(figure, model, variable):
+        add_figure(figure)
+        update(variable, model.palette)
+
+    return wrapper

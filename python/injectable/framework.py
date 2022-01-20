@@ -16,6 +16,28 @@ from queue import Queue
 from tornado import gen
 from functools import partial
 
+# MODEL
+
+
+@dataclass
+class Dataset:
+    id: int
+    label: str
+    variables: List[str] = field(default_factory=list)
+
+
+@dataclass
+class SelectedDataset:
+    figure_id: int
+    dataset_id: int
+
+
+@dataclass
+class Layer:
+    figure_id: int
+    dataset_id: int
+    variable: str
+
 
 # MSG
 
@@ -52,23 +74,24 @@ class TapMap:
 
 
 @dataclass
-class SetVariables:
-    label: str
-    variables: Dict[str, List[str]]
+class AddDataset:
+    dataset: Dataset
 
 
 @dataclass
-class SetVariable:
-    variable: str
+class AddLayer:
+    layer: Layer
 
 
 @dataclass
-class SetLayer:
+class OnSelected:
     side: str
-    variables: List[str]
+    category: str
+    old: List[str]
+    new: List[str]
 
 
-Msg = SubOne | AddOne | NoOp | HideShow | TapMap | SetVariables | SetVariable | SetLayer
+Msg = SubOne | AddOne | NoOp | HideShow | TapMap | AddDataset | AddLayer | OnSelected
 
 
 # MODEL
@@ -80,10 +103,9 @@ class Model:
     palette: List[str] = field(default_factory=lambda: bokeh.palettes.cividis(256))
     visible: List[bool] = field(default_factory=lambda: [True, True])
     point: Optional[Point] = None
-    variables: Dict[str, List[str]] = field(default_factory=dict)
-    variable: Optional[str] = None
-    left: List[str] = field(default_factory=list)
-    right: List[str] = field(default_factory=list)
+    datasets: List[Dataset] = field(default_factory=list)
+    layers: List[Layer] = field(default_factory=list)
+    selected_datasets: List[int] = field(default_factory=list)
 
 
 def init() -> Model:
@@ -94,20 +116,15 @@ def init() -> Model:
 View = Callable[[Figure], Callable[[Model, bool], None]]
 
 
-def attach_layers(figures, viewers):
+def attach_layers(figures, datasets):
     """Wire up row of figures to drivers/views"""
-
-    layers = [
-        (update, [add_figure(figure) for figure in figures])
-        for update, add_figure in viewers
-    ]
 
     def inner(model):
         """React to model changes"""
-        for update, row in layers:
-            update(model)
-            for visible, show in zip(model.visible, row):
-                show(visible)
+        for layer in model.layers:
+            figure = figures[layer.figure_id]
+            dataset = datasets[layer.dataset_id]
+            dataset(figure, model, layer.variable)
 
     return inner
 
@@ -192,8 +209,11 @@ def app(document, send_msg):
     profile_figure.title.align = "center"
 
     # Bokeh document
-    ui_nav, render_nav = navigation(send_msg)
-    document.add_root(ui_nav)
+    ui_nav_left, render_nav_left = navigation(send_msg, "left", "Left options")
+    ui_nav_right, render_nav_right = navigation(send_msg, "right", "Right options")
+    document.add_root(
+        bokeh.layouts.column(ui_nav_left, ui_nav_right, name="navigation")
+    )
     document.add_root(
         bokeh.layouts.column(
             bokeh.layouts.column(
@@ -218,7 +238,8 @@ def app(document, send_msg):
         render_point(model.point)
         render_profile(model.point)
         render_series(model.point)
-        render_nav(model)
+        render_nav_left(model)
+        render_nav_right(model)
 
     return inner
 
@@ -242,8 +263,8 @@ def run():
     runner.send(gen.coroutine(view))
 
     # Simulate I/O
-    for file_name in config.file_names:
-        thread = Thread(target=get_variables, args=(runner.send, file_name))
+    for i, file_name in enumerate(config.file_names):
+        thread = Thread(target=get_variables, args=(runner.send, file_name, i))
         thread.start()
 
 
@@ -260,7 +281,7 @@ def runtime(document):
         msg = yield
 
 
-def get_variables(send_msg, file_name):
+def get_variables(send_msg, file_name, dataset_id):
     import xarray
 
     # Perform I/O
@@ -268,7 +289,10 @@ def get_variables(send_msg, file_name):
     variables = sorted(ds.data_vars)
 
     # Send data to application
-    send_msg(SetVariables(file_name, variables))
+    send_msg(AddDataset(Dataset(dataset_id, file_name, variables)))
+
+
+# UPDATE
 
 
 def update(model, msg: Msg) -> Model:
@@ -282,79 +306,67 @@ def update(model, msg: Msg) -> Model:
             return replace(model, visible=[not visible for visible in model.visible])
         case TapMap(point):
             return replace(model, point=point)
-        case SetVariables(label, variables):
-            model.variables[label] = variables  # Note: in-place modification
+        case AddDataset(dataset):
+            model.datasets.append(dataset)  # Note: in-place modification
             return model
-        case SetVariable(variable):
-            return replace(model, variable=variable)
-        case SetLayer(side, variables):
-            if side == "left":
-                return replace(model, left=variables)
-            elif side == "right":
-                return replace(model, right=variables)
+        case AddLayer(layer):
+            model.layers.append(layer)  # Note: in-place modification
+            return model
+        case OnSelected(side, category, old, new):
+            figure_id = ["left", "right"].index(side)
+            if category == "dataset":
+                for label in new:
+                    if label not in old:
+                        for dataset in model.datasets:
+                            if dataset.label == label:
+                                model.selected_datasets.append(
+                                    SelectedDataset(figure_id, dataset.id)
+                                )
+            elif category == "variable":
+                for selected_dataset in model.selected_datasets:
+                    if selected_dataset.figure_id != figure_id:
+                        continue
+                    for variable in new:
+                        model.layers.append(
+                            Layer(figure_id, selected_dataset.dataset_id, variable)
+                        )
+            return model
         case NoOp():
             return model
 
 
-def navigation(send_msg):
-    select = bokeh.models.Select()
-
-    def on_change(attr, old, new):
-        send_msg(SetVariable(new))
-
-    select.on_change("value", on_change)
+def navigation(send_msg, side, title):
 
     # Multi-select visibility
-    title_left = bokeh.models.Div(text="Left choices", css_classes=["text-lg", "py-2"])
-    multi_left = bokeh.models.MultiChoice()
-    multi_left_vars = bokeh.models.MultiChoice()
+    title = bokeh.models.Div(text=title, css_classes=["text-lg", "py-2"])
+    multi = bokeh.models.MultiChoice()
+    multi_vars = bokeh.models.MultiChoice()
 
-    multi_right = bokeh.models.MultiChoice()
-    multi_right_vars = bokeh.models.MultiChoice()
-
-    def on_multi(side):
+    def on_multi(category):
         def wrapper(attr, old, new):
-            send_msg(SetLayer(side, new))
+            send_msg(OnSelected(side, category, old, new))
 
         return wrapper
 
-    title_right = bokeh.models.Div(
-        text="Right choices", css_classes=["text-lg", "py-2"]
-    )
-    multi_right.on_change("value", on_multi("right"))
-    multi_right_vars.on_change("value", on_multi("right"))
-    multi_left.on_change("value", on_multi("left"))
-    multi_left_vars.on_change("value", on_multi("left"))
+    multi.on_change("value", on_multi("dataset"))
+    multi_vars.on_change("value", on_multi("variable"))
 
     def render(model):
-        select.disabled = len(model.variables) == 0
-        select.options = model.variables
-        if model.variable is not None:
-            if model.variable != select.value:
-                select.value = model.variable
-
         # Dataset names
-        if model.variables is not None:
+        if model.datasets is not None:
             vars = []
-            for items in model.variables.values():
-                vars += items
+            for dataset in model.datasets:
+                vars += dataset.variables
             vars = sorted(set(vars))
 
-            multi_left.options = list(model.variables.keys())
-            multi_right.options = list(model.variables.keys())
-            multi_left_vars.options = vars
-            multi_right_vars.options = vars
+            multi.options = [dataset.label for dataset in model.datasets]
+            multi_vars.options = vars
 
     return (
         bokeh.layouts.column(
-            select,
-            title_left,
-            multi_left,
-            multi_left_vars,
-            title_right,
-            multi_right,
-            multi_right_vars,
-            name="navigation",
+            title,
+            multi,
+            multi_vars,
         ),
         render,
     )
