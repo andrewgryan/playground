@@ -10,14 +10,14 @@
     <div class="flex flex-row space-x-2 w-screen h-screen bg-gray-100">
 	{% for root in doc.roots %}
 		{% if root.name == 'navigation' %}
-			<div class="z-10 h-screen bg-white">
+			<div class="z-10 bg-white m-3 shadow rounded">
                 <div class="flex flex-row justify-center">
                     <div class="py-4 text-xl">Navigation</div>
                 </div>
 				{{ embed(root) | indent(10) }}
 			</div>
         {% else %}
-            <div class="flex-grow h-screen p-2">
+            <div class="flex-grow h-screen">
 			{{ embed(root) | indent(10) }}
             </div>
         {% endif %}

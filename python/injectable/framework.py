@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace, field
 import bokeh.plotting
 from bokeh.plotting import Figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
+from bokeh.models import MercatorAxis
 import bokeh.palettes
 from bokeh.events import Tap
 from drivers import circle, image, niwa
@@ -165,23 +166,30 @@ def app(document, send_msg):
         datasets.append(niwa.dataset(file_name))
 
     # Maps on figure row
-    map_figures = [map_figure(send_msg, title="Left"), map_figure(send_msg, title="Right")]
+    map_figures = [
+        map_figure(send_msg, title="Left"),
+        map_figure(send_msg, title="Right"),
+    ]
 
     # Placeholder for profile/time series
     series_figure = bokeh.plotting.figure(
         title="Time series",
+        toolbar_location="above",
         x_axis_type="datetime",
         y_axis_type="mercator",
-        margin=(4,4,4,4),
-        css_classes=["rounded", "shadow"]
+        margin=(4, 4, 4, 4),
+        css_classes=["rounded", "shadow"],
     )
+    series_figure.title.align = "center"
     profile_figure = bokeh.plotting.figure(
         title="Vertical profile",
+        toolbar_location="above",
         x_axis_type="mercator",
         y_axis_type="mercator",
-        margin=(4,4,4,4),
-        css_classes=["rounded", "shadow"]
+        margin=(4, 4, 4, 4),
+        css_classes=["rounded", "shadow"],
     )
+    profile_figure.title.align = "center"
 
     # Bokeh document
     ui_nav, render_nav = navigation(send_msg)
@@ -310,7 +318,9 @@ def navigation(send_msg):
 
         return wrapper
 
-    title_right = bokeh.models.Div(text="Right choices", css_classes=["text-lg", "py-2"])
+    title_right = bokeh.models.Div(
+        text="Right choices", css_classes=["text-lg", "py-2"]
+    )
     multi_right.on_change("value", on_multi("right"))
     multi_right_vars.on_change("value", on_multi("right"))
     multi_left.on_change("value", on_multi("left"))
@@ -352,14 +362,23 @@ def navigation(send_msg):
 
 def map_figure(send_msg, **figure_kwargs) -> bokeh.plotting.Figure:
     figure = bokeh.plotting.figure(
+        toolbar_location="above",
         x_range=(-2e6, 2e6),
         y_range=(-2e6, 2e6),
         x_axis_type="mercator",
         y_axis_type="mercator",
-        margin=(4,4,4,4),
+        margin=(4, 4, 4, 4),
         css_classes=["rounded", "shadow"],
-        **figure_kwargs
+        **figure_kwargs,
     )
+    figure.title.align = "center"
+
+    figure.extra_x_ranges.update({"x_above": figure.x_range})
+    figure.add_layout(MercatorAxis("lon", x_range_name="x_above"), "above")
+
+    figure.extra_y_ranges.update({"y_right": figure.y_range})
+    figure.add_layout(MercatorAxis("lat", y_range_name="y_right"), "right")
+
     provider = get_provider(CARTODBPOSITRON)
     figure.add_tile(provider)
 
