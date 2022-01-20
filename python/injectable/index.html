@@ -1,0 +1,20 @@
+{% extends base %}
+
+{% block postamble %}
+<link href="./src/input.css" rel="stylesheet">
+{% endblock %}
+
+{% block contents %}
+	{% for doc in docs %}
+	{{ embed(doc) if doc.elementid }}
+	{% for root in doc.roots %}
+		{% if root.name == 'navigation' %}
+			<div class="bg-green-200 z-10 absolute top-0 left-0 h-screen shadow bg-white opacity-90">
+				{{ embed(root) | indent(10) }}
+			</div>
+        {% else %}
+			{{ embed(root) | indent(10) }}
+        {% endif %}
+	{% endfor %}
+	{% endfor %}
+{% endblock %}

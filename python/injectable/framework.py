@@ -95,8 +95,11 @@ View = Callable[[Figure], Callable[[Model, bool], None]]
 
 def attach_layers(figures, viewers):
     """Wire up row of figures to drivers/views"""
-        
-    layers = [(update, [add_figure(figure) for figure in figures]) for update, add_figure in viewers]
+
+    layers = [
+        (update, [add_figure(figure) for figure in figures])
+        for update, add_figure in viewers
+    ]
 
     def inner(model):
         """React to model changes"""
@@ -176,16 +179,14 @@ def app(document, send_msg):
 
     # Bokeh document
     ui_nav, render_nav = navigation(send_msg)
+    document.add_root(ui_nav)
     document.add_root(
         bokeh.layouts.column(
-            ui_nav,
-        bokeh.layouts.column(
-            bokeh.layouts.row(
-                *map_figures, sizing_mode="scale_width"
-            ),
-            bokeh.layouts.row(
-                series_figure, profile_figure, sizing_mode="scale_width"
-            ),
+            bokeh.layouts.column(
+                bokeh.layouts.row(*map_figures, sizing_mode="scale_width"),
+                bokeh.layouts.row(
+                    series_figure, profile_figure, sizing_mode="scale_width"
+                ),
             ),
             sizing_mode="scale_width",
         )
@@ -298,6 +299,7 @@ def navigation(send_msg):
     def on_multi(side):
         def wrapper(attr, old, new):
             send_msg(SetLayer(side, new))
+
         return wrapper
 
     multi_right.on_change("value", on_multi("right"))
@@ -316,7 +318,7 @@ def navigation(send_msg):
         if model.variables is not None:
             vars = []
             for items in model.variables.values():
-               vars += items
+                vars += items
             vars = sorted(set(vars))
 
             multi_left.options = list(model.variables.keys())
@@ -324,9 +326,17 @@ def navigation(send_msg):
             multi_left_vars.options = vars
             multi_right_vars.options = vars
 
-    return bokeh.layouts.row(select,
-            bokeh.layouts.column(multi_left, multi_left_vars),
-            bokeh.layouts.column(multi_right, multi_right_vars)), render
+    return (
+        bokeh.layouts.column(
+            select,
+            multi_left,
+            multi_left_vars,
+            multi_right,
+            multi_right_vars,
+            name="navigation",
+        ),
+        render,
+    )
 
 
 def map_figure(send_msg) -> bokeh.plotting.Figure:
