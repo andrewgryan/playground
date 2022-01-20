@@ -165,16 +165,22 @@ def app(document, send_msg):
         datasets.append(niwa.dataset(file_name))
 
     # Maps on figure row
-    map_figures = [map_figure(send_msg), map_figure(send_msg)]
+    map_figures = [map_figure(send_msg, title="Left"), map_figure(send_msg, title="Right")]
 
     # Placeholder for profile/time series
     series_figure = bokeh.plotting.figure(
+        title="Time series",
         x_axis_type="datetime",
         y_axis_type="mercator",
+        margin=(4,4,4,4),
+        css_classes=["rounded", "shadow"]
     )
     profile_figure = bokeh.plotting.figure(
+        title="Vertical profile",
         x_axis_type="mercator",
         y_axis_type="mercator",
+        margin=(4,4,4,4),
+        css_classes=["rounded", "shadow"]
     )
 
     # Bokeh document
@@ -183,12 +189,13 @@ def app(document, send_msg):
     document.add_root(
         bokeh.layouts.column(
             bokeh.layouts.column(
-                bokeh.layouts.row(*map_figures, sizing_mode="scale_width"),
+                bokeh.layouts.row(*map_figures, spacing=4, sizing_mode="stretch_both"),
                 bokeh.layouts.row(
-                    series_figure, profile_figure, sizing_mode="scale_width"
+                    series_figure, profile_figure, spacing=4, sizing_mode="stretch_both"
                 ),
+                spacing=4,
             ),
-            sizing_mode="scale_width",
+            sizing_mode="stretch_both",
         )
     )
 
@@ -290,6 +297,7 @@ def navigation(send_msg):
     select.on_change("value", on_change)
 
     # Multi-select visibility
+    title_left = bokeh.models.Div(text="Left choices", css_classes=["text-lg", "py-2"])
     multi_left = bokeh.models.MultiChoice()
     multi_left_vars = bokeh.models.MultiChoice()
 
@@ -302,6 +310,7 @@ def navigation(send_msg):
 
         return wrapper
 
+    title_right = bokeh.models.Div(text="Right choices", css_classes=["text-lg", "py-2"])
     multi_right.on_change("value", on_multi("right"))
     multi_right_vars.on_change("value", on_multi("right"))
     multi_left.on_change("value", on_multi("left"))
@@ -329,8 +338,10 @@ def navigation(send_msg):
     return (
         bokeh.layouts.column(
             select,
+            title_left,
             multi_left,
             multi_left_vars,
+            title_right,
             multi_right,
             multi_right_vars,
             name="navigation",
@@ -339,12 +350,15 @@ def navigation(send_msg):
     )
 
 
-def map_figure(send_msg) -> bokeh.plotting.Figure:
+def map_figure(send_msg, **figure_kwargs) -> bokeh.plotting.Figure:
     figure = bokeh.plotting.figure(
         x_range=(-2e6, 2e6),
         y_range=(-2e6, 2e6),
         x_axis_type="mercator",
         y_axis_type="mercator",
+        margin=(4,4,4,4),
+        css_classes=["rounded", "shadow"],
+        **figure_kwargs
     )
     provider = get_provider(CARTODBPOSITRON)
     figure.add_tile(provider)
