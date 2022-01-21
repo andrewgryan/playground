@@ -1,5 +1,5 @@
 import yaml
-from typing import List, Callable, Optional, Dict
+from typing import List, Callable, Optional, Dict, Set
 from dataclasses import dataclass, replace, field
 import bokeh.plotting
 from bokeh.plotting import Figure
@@ -32,7 +32,7 @@ class SelectedDataset:
     dataset_id: int
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Layer:
     figure_id: int
     dataset_id: int
@@ -104,7 +104,7 @@ class Model:
     visible: List[bool] = field(default_factory=lambda: [True, True])
     point: Optional[Point] = None
     datasets: List[Dataset] = field(default_factory=list)
-    layers: List[Layer] = field(default_factory=list)
+    layers: Set[Layer] = field(default_factory=set)
     selected_datasets: List[int] = field(default_factory=list)
 
 
@@ -118,13 +118,24 @@ View = Callable[[Figure], Callable[[Model, bool], None]]
 
 def attach_layers(figures, datasets):
     """Wire up row of figures to drivers/views"""
+    attached = set()
 
     def inner(model):
         """React to model changes"""
-        for layer in model.layers:
+        print("--")
+        for layer in attached - model.layers:
+            print(f"remove: {layer}")
             figure = figures[layer.figure_id]
-            dataset = datasets[layer.dataset_id]
-            dataset(figure, model, layer.variable)
+            _, remove_layer = datasets[layer.dataset_id]
+            remove_layer(figure, layer.variable)
+            attached.remove(layer)
+
+        for layer in model.layers - attached:
+            print(f"add: {layer}")
+            figure = figures[layer.figure_id]
+            add_layer, _ = datasets[layer.dataset_id]
+            add_layer(figure, model, layer.variable)
+            attached.add(layer)
 
     return inner
 
@@ -195,16 +206,13 @@ def app(document, send_msg):
         x_axis_type="datetime",
         y_axis_type="mercator",
         margin=(4, 4, 4, 4),
-        css_classes=["rounded", "shadow"],
     )
-    series_figure.title.align = "center"
     profile_figure = bokeh.plotting.figure(
         title="Vertical profile",
-        toolbar_location="above",
+        toolbar_location="right",
         x_axis_type="mercator",
         y_axis_type="mercator",
         margin=(4, 4, 4, 4),
-        css_classes=["rounded", "shadow"],
     )
     profile_figure.title.align = "center"
 
@@ -216,15 +224,19 @@ def app(document, send_msg):
     )
     document.add_root(
         bokeh.layouts.column(
-            bokeh.layouts.column(
-                bokeh.layouts.row(*map_figures, spacing=4, sizing_mode="stretch_both"),
-                bokeh.layouts.row(
-                    series_figure, profile_figure, spacing=4, sizing_mode="stretch_both"
-                ),
-                spacing=4,
-            ),
-            sizing_mode="stretch_both",
+            map_figures[0], sizing_mode="stretch_both", name="map_left"
         )
+    )
+    document.add_root(
+        bokeh.layouts.column(
+            map_figures[1], sizing_mode="stretch_both", name="map_right"
+        )
+    )
+    document.add_root(
+        bokeh.layouts.column(series_figure, sizing_mode="stretch_both", name="series")
+    )
+    document.add_root(
+        bokeh.layouts.column(profile_figure, sizing_mode="stretch_both", name="profile")
     )
 
     # Create renderers
@@ -310,7 +322,7 @@ def update(model, msg: Msg) -> Model:
             model.datasets.append(dataset)  # Note: in-place modification
             return model
         case AddLayer(layer):
-            model.layers.append(layer)  # Note: in-place modification
+            model.layers.add(layer)  # Note: in-place modification
             return model
         case OnSelected(side, category, old, new):
             figure_id = ["left", "right"].index(side)
@@ -326,10 +338,13 @@ def update(model, msg: Msg) -> Model:
                 for selected_dataset in model.selected_datasets:
                     if selected_dataset.figure_id != figure_id:
                         continue
+                    for variable in old:
+                        layer = Layer(figure_id, selected_dataset.dataset_id, variable)
+                        model.layers.remove(layer)
                     for variable in new:
-                        model.layers.append(
-                            Layer(figure_id, selected_dataset.dataset_id, variable)
-                        )
+                        layer = Layer(figure_id, selected_dataset.dataset_id, variable)
+                        model.layers.add(layer)
+
             return model
         case NoOp():
             return model
@@ -380,10 +395,8 @@ def map_figure(send_msg, **figure_kwargs) -> bokeh.plotting.Figure:
         x_axis_type="mercator",
         y_axis_type="mercator",
         margin=(4, 4, 4, 4),
-        css_classes=["rounded", "shadow"],
         **figure_kwargs,
     )
-    figure.title.align = "center"
 
     figure.extra_x_ranges.update({"x_above": figure.x_range})
     figure.add_layout(MercatorAxis("lon", x_range_name="x_above"), "above")

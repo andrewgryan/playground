@@ -7,13 +7,11 @@ def dataset(file_name: str):
 
     ds = xarray.open_dataset(file_name)
 
-    # Bokeh wiring
-    source = bokeh.models.ColumnDataSource(
-        data=dict(x=[], y=[], dw=[], dh=[], image=[])
-    )
+    # Functions to hide/show layers
+    registry = {}
     color_mappers = []
 
-    def update(variable, palette):
+    def update(source, variable, palette):
         """React to model changes"""
         print(f"{file_name}: {variable}")
         if variable is not None:
@@ -44,6 +42,9 @@ def dataset(file_name: str):
 
     def add_figure(figure):
         """Register graphical representation with figure"""
+        source = bokeh.models.ColumnDataSource(
+            data=dict(x=[], y=[], dw=[], dh=[], image=[])
+        )
         glyph_renderer = figure.image(
             x="x", y="y", dw="dw", dh="dh", image="image", source=source
         )
@@ -53,11 +54,22 @@ def dataset(file_name: str):
             """Allow user to toggle visibility"""
             glyph_renderer.visible = visible
 
-        return show
+        return show, source
 
     # return update, add_figure
-    def wrapper(figure, model, variable):
-        add_figure(figure)
-        update(variable, model.palette)
+    def add_layer(figure, model, variable):
+        key = (figure.id, variable)
+        if key in registry:
+            show, _ = registry[key]
+            show(True)
+        else:
+            show, source = add_figure(figure)
+            update(source, variable, model.palette)
+            registry[key] = (show, source)
 
-    return wrapper
+    def remove_layer(figure, variable):
+        key = (figure.id, variable)
+        show, _ = registry[key]
+        show(False)
+
+    return add_layer, remove_layer
