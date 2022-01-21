@@ -122,16 +122,13 @@ def attach_layers(figures, datasets):
 
     def inner(model):
         """React to model changes"""
-        print("--")
         for layer in attached - model.layers:
-            print(f"remove: {layer}")
             figure = figures[layer.figure_id]
             _, remove_layer = datasets[layer.dataset_id]
             remove_layer(figure, layer.variable)
             attached.remove(layer)
 
         for layer in model.layers - attached:
-            print(f"add: {layer}")
             figure = figures[layer.figure_id]
             add_layer, _ = datasets[layer.dataset_id]
             add_layer(figure, model, layer.variable)
@@ -140,11 +137,36 @@ def attach_layers(figures, datasets):
     return inner
 
 
+def layer_manager():
+    """Orchestrate layers"""
+    attached = set()
+
+    def removed(layers: Set[Layer]):
+        for layer in attached - layers:
+            yield layer
+            attached.remove(layer)
+
+    def added(layers: Set[Layer]):
+        for layer in layers - attached:
+            yield layer
+            attached.add(layer)
+
+    return removed, added
+
+
 def attach_point(figures):
     sources = []
     for figure in figures:
         source = bokeh.models.ColumnDataSource(data={"x": [], "y": []})
-        figure.circle(x="x", y="y", size=5, source=source)
+        figure.circle(
+            x="x",
+            y="y",
+            size=6,
+            source=source,
+            level="overlay",
+            fill_color="white",
+            line_color="black",
+        )
         sources.append(source)
 
     def inner(point: Optional[Point]):
@@ -156,30 +178,38 @@ def attach_point(figures):
     return inner
 
 
-def attach_profile(figure):
-    source = bokeh.models.ColumnDataSource(data={"x": [], "y": []})
-    figure.circle(x="x", y="y", size=5, color="red", source=source)
-    figure.line(x="x", y="y", color="red", source=source)
+def attach_profile(figure, datasets):
+    """Orchestrate add/remove profile layers"""
+    registry = {}
+
+    def to_key(layer):
+        """Unique data structure to cache profile renderers"""
+        return layer.dataset_id, layer.variable
+
+    def add(layer: Layer, point: Point):
+        """Call profile renderer methods"""
+        key = to_key(layer)
+        if key not in registry:
+            dataset = datasets[layer.dataset_id]
+            registry[key] = dataset.profile(figure, layer)
+        registry[key].render(point)
+
+    def remove(layer: Layer):
+        """Call profile renderer methods"""
+        key = to_key(layer)
+        if key in registry:
+            registry[key].remove()
+
+    return add, remove
+
+
+def attach_series(figure, plotters):
+    renderers = [plotter(figure) for plotter in plotters]
 
     def inner(point: Optional[Point]):
         if point is not None:
-            data = {"x": [point.x], "y": [point.y]}
-            source.stream(data)
-
-    return inner
-
-
-def attach_series(figure):
-    import datetime
-
-    source = bokeh.models.ColumnDataSource(data={"x": [], "y": []})
-    figure.circle(x="x", y="y", size=5, color="red", source=source)
-    figure.line(x="x", y="y", color="red", source=source)
-
-    def inner(point: Optional[Point]):
-        if point is not None:
-            data = {"x": [datetime.datetime.now()], "y": [point.y]}
-            source.stream(data)
+            for renderer in renderers:
+                renderer(point)
 
     return inner
 
@@ -191,7 +221,7 @@ def app(document, send_msg):
     datasets = []
     config = Config(**yaml.safe_load(open("config.yaml")))
     for file_name in config.file_names:
-        datasets.append(niwa.dataset(file_name))
+        datasets.append(niwa.Dataset(file_name))
 
     # Maps on figure row
     map_figures = [
@@ -204,14 +234,11 @@ def app(document, send_msg):
         title="Time series",
         toolbar_location="above",
         x_axis_type="datetime",
-        y_axis_type="mercator",
         margin=(4, 4, 4, 4),
     )
     profile_figure = bokeh.plotting.figure(
         title="Vertical profile",
         toolbar_location="right",
-        x_axis_type="mercator",
-        y_axis_type="mercator",
         margin=(4, 4, 4, 4),
     )
     profile_figure.title.align = "center"
@@ -240,15 +267,25 @@ def app(document, send_msg):
     )
 
     # Create renderers
-    render_layers = attach_layers(map_figures, datasets)
+    removed, added = layer_manager()
+    render_layers = attach_layers(map_figures, [ds.map_layer() for ds in datasets])
     render_point = attach_point(map_figures)
-    render_profile = attach_profile(profile_figure)
-    render_series = attach_series(series_figure)
+    render_series = attach_series(series_figure, [ds.time_series() for ds in datasets])
+    add_profile, remove_profile = attach_profile(profile_figure, datasets)
 
     def inner(model):
+        # Remove
+        for layer in removed(model.layers):
+            if model.point is not None:
+                remove_profile(layer)
+
+        # Add
+        for layer in added(model.layers):
+            if model.point is not None:
+                add_profile(layer, model.point)
+
         render_layers(model)
         render_point(model.point)
-        render_profile(model.point)
         render_series(model.point)
         render_nav_left(model)
         render_nav_right(model)
@@ -287,7 +324,6 @@ def runtime(document):
     render(model)
     msg = yield
     while True:
-        print(msg)
         model = update(model, msg)
         document.add_next_tick_callback(partial(render, model))
         msg = yield
@@ -340,7 +376,8 @@ def update(model, msg: Msg) -> Model:
                         continue
                     for variable in old:
                         layer = Layer(figure_id, selected_dataset.dataset_id, variable)
-                        model.layers.remove(layer)
+                        if layer in model.layers:
+                            model.layers.remove(layer)
                     for variable in new:
                         layer = Layer(figure_id, selected_dataset.dataset_id, variable)
                         model.layers.add(layer)
@@ -395,6 +432,7 @@ def map_figure(send_msg, **figure_kwargs) -> bokeh.plotting.Figure:
         x_axis_type="mercator",
         y_axis_type="mercator",
         margin=(4, 4, 4, 4),
+        active_scroll="wheel_zoom",
         **figure_kwargs,
     )
 
