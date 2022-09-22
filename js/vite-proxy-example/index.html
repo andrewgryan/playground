@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Vite proxy</title>
+    </head>
+    <body>
+        <h1>Hello, World!</h1>
+        <div id="placeholder"></div>
+        <script type="module" id="code">
+            fetch("/api/todos/1")
+                .then((resp) => resp.json())
+                .then(({ title }) => {
+                    document.getElementById("placeholder").innerHTML = title;
+                });
+        </script>
+    </body>
+</html>
