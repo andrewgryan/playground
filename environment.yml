@@ -1,0 +1,9 @@
+name: playground
+channels:
+  - conda-forge
+dependencies:
+  - dagster
+  - dagit
+  - black
+  - pytest
+  - iris
