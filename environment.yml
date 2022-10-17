@@ -2,4 +2,8 @@ name: playground
 channels:
   - conda-forge
 dependencies:
-  - numpy
+  - dagster
+  - dagit
+  - black
+  - pytest
+  - iris
