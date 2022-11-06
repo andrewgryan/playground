@@ -4,28 +4,51 @@ var { buildSchema } = require("graphql");
 
 // Construct a schema, using GraphQL schema language
 var schema = buildSchema(`
+  type Mutation {
+    setMessage(message: String): String
+  }
+
+  type RandomDie {
+    roll(numRolls: Int!): [Int!]!
+    rollOnce: Int
+  }
+
   type Query {
-    hello: String
-    random: Float!
-    rollDice(numDice: Int!, numSides: Int): [Int!]!
+    getDie(numSides: Int): RandomDie
+    getMessage: String
   }
 `);
 
 // The root provides a resolver function for each API endpoint
-var root = {
-  hello: () => {
-    return "Hello world!";
-  },
-  random: () => {
-    return Math.random();
-  },
-  rollDice: (args) => {
+class RandomDie {
+  constructor(numSides) {
+    this.numSides = numSides
+  }
+  rollOnce() {
+      return 1 + Math.floor(Math.random() * (this.numSides || 6));
+  }
+  roll({numRolls}) {
     var output = [];
-    for (var i = 0; i < args.numDice; i++) {
-      output.push(1 + Math.floor(Math.random() * (args.numSides || 6)));
+    for (var i = 0; i < numRolls; i++) {
+      output.push(this.rollOnce());
     }
     return output;
+  }
+}
+
+let fakeDatabase = {}
+
+var root = {
+  setMessage: ({ message }) => {
+    fakeDatabase.message = message
+    return message
   },
+  getMessage: () => {
+    return fakeDatabase.message
+  },
+  getDie: ({ numSides }) => {
+    return new RandomDie(numSides || 6)
+  }
 };
 
 var app = express();
