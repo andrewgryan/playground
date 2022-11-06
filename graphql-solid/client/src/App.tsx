@@ -1,25 +1,27 @@
-import type { Component } from 'solid-js';
-import { createResource, createEffect } from 'solid-js';
-import { createClient } from '@urql/core';
+import type { Component } from "solid-js";
+import { createResource, createEffect } from "solid-js";
+import { createClient } from "@urql/core";
 
-import logo from './logo.svg';
-import styles from './App.module.css';
+import logo from "./logo.svg";
+import styles from "./App.module.css";
 
 const client = createClient({
-  url: 'http://localhost:3000/graphql'
-})
+  url: "http://localhost:3000/graphql",
+});
 
 const QUERY = `
   query RollDice($dice: Int!, $sides: Int) {
     rollDice(numDice: $dice, numSides: $sides)  
   }
-`
-const [hello] = createResource(() => client.query(QUERY, { dice: 3, sides: 6 }).toPromise())
+`;
+const [hello] = createResource(() =>
+  client.query(QUERY, { dice: 3, sides: 6 }).toPromise()
+);
 
 const App: Component = () => {
   createEffect(() => {
-    console.log(hello())
-  })
+    console.log(hello());
+  });
   return (
     <div class={styles.App}>
       <header class={styles.header}>
