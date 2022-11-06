@@ -8,7 +8,13 @@ import styles from './App.module.css';
 const client = createClient({
   url: 'http://localhost:3000/graphql'
 })
-const [hello] = createResource(() => client.query(`{hello}`).toPromise())
+
+const QUERY = `
+  query RollDice($dice: Int!, $sides: Int) {
+    rollDice(numDice: $dice, numSides: $sides)  
+  }
+`
+const [hello] = createResource(() => client.query(QUERY, { dice: 3, sides: 6 }).toPromise())
 
 const App: Component = () => {
   createEffect(() => {
