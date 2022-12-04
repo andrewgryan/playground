@@ -2,3 +2,5 @@ target
 dist
 node_modules
 *.beam
+*.hi
+*.o
