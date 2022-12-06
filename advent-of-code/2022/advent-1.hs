@@ -8,6 +8,10 @@ main = do
     let nums = fmap (\s -> readMaybe s :: Maybe Int) items
     let elves = makeElves nums [] []
     let calories = fmap sum elves
+    let part2 =  (sum . take 3 . reverse . sort) calories
+    
+    print part2
+
     let maxCalories = fromJust (maxi calories)
     let i = elemIndex maxCalories calories
     print maxCalories
