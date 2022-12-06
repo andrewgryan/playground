@@ -1,4 +1,5 @@
 -- Advent of Code Day 2
+import Data.Maybe
 
 data Hand = Rock | Paper | Scissors
 data Round = Win | Lose | Draw
@@ -45,7 +46,15 @@ totalScore :: Hand -> Hand -> Int
 totalScore opponent you =
     roundScore (fromHands opponent you) + handScore you
 
+calculateScore :: String -> Int
+calculateScore s =
+    let
+        opponent = fromJust (fromChar (head s))
+        you = fromJust (fromChar (last s))
+    in
+    totalScore opponent you
 
 main = do
   text <- readFile "input-2"
-  print (head text)
+  let rounds = lines text
+  print (sum (fmap calculateScore rounds))
