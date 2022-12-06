@@ -2,6 +2,7 @@
 import Text.Read
 import Data.Set
 import Data.Maybe
+import Data.List.Split
 
 score :: Char -> Maybe Int
 score c =
@@ -74,7 +75,17 @@ calculate s =
         duplicates = toList (findDuplicates left right)
     in
     sum (fmap (fromJust . score) duplicates)
+        
+solutionPart1 :: String -> Int
+solutionPart1 text =
+    sum (fmap calculate (lines text))
+        
+solutionPart2 :: String -> Int
+solutionPart2 text =
+    0
 
 main = do
     text <- readFile "input-3"
-    print (sum (fmap calculate (lines text)))
+    print (chunksOf 3 (lines text))
+    print (solutionPart1 text)
+    print (solutionPart2 text)
