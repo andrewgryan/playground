@@ -76,16 +76,24 @@ calculate s =
     in
     sum (fmap (fromJust . score) duplicates)
         
+calculatePart2 :: [Set Char] -> Int
+calculatePart2 elves =
+    let
+        seed = head elves
+        rest = fromList (tail elves)
+        badges = toList (Data.Set.foldl intersection seed rest)
+    in
+    sum (fmap (fromJust . score) badges)
+        
 solutionPart1 :: String -> Int
 solutionPart1 text =
     sum (fmap calculate (lines text))
         
 solutionPart2 :: String -> Int
 solutionPart2 text =
-    0
+    sum (fmap calculatePart2 (chunksOf 3 (fmap fromList (lines text))))
 
 main = do
     text <- readFile "input-3"
-    print (chunksOf 3 (lines text))
-    print (solutionPart1 text)
+    -- print (solutionPart1 text)
     print (solutionPart2 text)
