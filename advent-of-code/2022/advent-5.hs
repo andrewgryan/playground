@@ -5,7 +5,12 @@ import Data.Maybe (catMaybes)
 
 data Crate = Crate Char deriving (Show)
 data Stack = Stack Char [Crate] deriving (Show)
-data Instruction = Instruction Int String String deriving (Show)
+data Instruction = Instruction Int Char Char deriving (Show)
+data Scene = Scene [Stack] [Instruction] deriving (Show)
+
+toScene :: String -> Scene
+toScene s =
+    Scene (parseStacks s) (parseInstructions s)
 
 toStack :: String -> Stack
 toStack s =
@@ -13,8 +18,8 @@ toStack s =
         (x:xs) -> Stack x (((fmap Crate) . (filter notBlank)) xs)
         _ -> Stack ' ' [] -- Too lazy to do a Maybe Stack
 
-parseBoard :: String -> [Stack]
-parseBoard =
+parseStacks :: String -> [Stack]
+parseStacks =
    (fmap toStack) . (filter isValid) . (fmap reverse) . transpose . take 9 . lines
 
 isValid :: String -> Bool
@@ -40,7 +45,7 @@ toInstruction s =
     in
     case words of
         ("move":x:"from":y:"to":z:_) ->
-            Just (Instruction (read x :: Int) y z)
+            Just (Instruction (read x :: Int) (head y) (head z))
         _ ->
             Nothing
 
@@ -48,6 +53,15 @@ parseInstructions :: String -> [Instruction]
 parseInstructions =
     catMaybes . (fmap toInstruction) . lines
 
+resolve :: Scene -> [Stack]
+resolve (Scene stacks instructions) =
+   foldl moveCrates stacks instructions
+
+moveCrates :: [Stack] -> Instruction -> [Stack]
+moveCrates stacks _ =
+    stacks
+
+
 main = do
     text <- readFile "input-5"
-    print (parseInstructions text)
+    print (resolve (toScene text))
