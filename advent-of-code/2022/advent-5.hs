@@ -1,10 +1,11 @@
 import Text.Read
 import Data.List (reverse, stripPrefix, transpose)
 import Data.List.Split (splitOn)
+import Data.Maybe (catMaybes)
 
 data Crate = Crate Char deriving (Show)
 data Stack = Stack Char [Crate] deriving (Show)
-data Instruction = Instruction String String String deriving (Show)
+data Instruction = Instruction Int String String deriving (Show)
 
 toStack :: String -> Stack
 toStack s =
@@ -39,13 +40,13 @@ toInstruction s =
     in
     case words of
         ("move":x:"from":y:"to":z:_) ->
-            Just (Instruction x y z)
+            Just (Instruction (read x :: Int) y z)
         _ ->
             Nothing
 
-parseInstructions :: String -> [Maybe Instruction]
+parseInstructions :: String -> [Instruction]
 parseInstructions =
-    (fmap toInstruction) . lines
+    catMaybes . (fmap toInstruction) . lines
 
 main = do
     text <- readFile "input-5"
