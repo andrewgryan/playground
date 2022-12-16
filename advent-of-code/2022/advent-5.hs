@@ -2,6 +2,9 @@ import Text.Read
 import Data.List (reverse, stripPrefix, transpose)
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes)
+import qualified Data.List as List
+import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 
 data Crate = Crate Char deriving (Show)
 data Stack = Stack Char [Crate] deriving (Show)
@@ -58,10 +61,43 @@ resolve (Scene stacks instructions) =
    foldl moveCrates stacks instructions
 
 moveCrates :: [Stack] -> Instruction -> [Stack]
-moveCrates stacks _ =
-    stacks
+moveCrates stacks (Instruction n from to) =
+    let
+        map = Map.fromList (fmap toTuple stacks)
+        fromCrates = Maybe.fromJust (Map.lookup from map)
+        toCrates = Maybe.fromJust (Map.lookup to map)
+        unloadedCrates = reverse (take n (reverse fromCrates))
+        remainingCrates = reverse (drop n (reverse fromCrates))
+        map' = Map.insert from remainingCrates map
+        map'' = Map.insert to (toCrates ++ unloadedCrates) map'
+        newStacks = fmap fromTuple (Map.toList map'')
+    in
+    newStacks
+        
+toTuple :: Stack -> (Char, [Crate])
+toTuple (Stack c crates) =
+    (c, crates)
+        
+fromTuple :: (Char, [Crate]) -> Stack
+fromTuple (c, crates) =
+    Stack c crates
+        
+onTop :: [Stack] -> String
+onTop =
+    fmap lastCrate . List.sortOn stackKey
 
+stackKey :: Stack -> Char
+stackKey (Stack k _) =
+    k
+        
+lastCrate :: Stack -> Char
+lastCrate (Stack _ crates) =
+    toChar (last crates)
+        
+toChar :: Crate -> Char
+toChar (Crate c) =
+    c
 
 main = do
     text <- readFile "input-5"
-    print (resolve (toScene text))
+    print (onTop (resolve (toScene text)))
