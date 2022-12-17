@@ -6,28 +6,28 @@ import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 
-data Crate = Crate Char deriving (Show)
+newtype Crate = Crate Char deriving (Show)
 data Stack = Stack Char [Crate] deriving (Show)
 data Instruction = Instruction Int Char Char deriving (Show)
 data Scene = Scene [Stack] [Instruction] deriving (Show)
 
 toScene :: String -> Scene
 toScene s =
-    Scene (parseStacks s) (parseInstructions s)
+    Scene (parseStacks s) (parseInstructions (lines s))
 
 toStack :: String -> Stack
 toStack s =
     case s of
-        (x:xs) -> Stack x (((fmap Crate) . (filter notBlank)) xs)
+        (x:xs) -> Stack x ((fmap Crate . filter notBlank) xs)
         _ -> Stack ' ' [] -- Too lazy to do a Maybe Stack
 
 parseStacks :: String -> [Stack]
 parseStacks =
-   (fmap toStack) . (filter isValid) . (fmap reverse) . transpose . take 9 . lines
+   fmap toStack . filter isValid . fmap reverse . transpose . take 9 . lines
 
 isValid :: String -> Bool
 isValid s =
-    not ((hasChar '[' s) || (hasChar ']' s) || ((all isBlank) s))
+    not (hasChar '[' s || hasChar ']' s || all isBlank s)
 
 hasChar :: Char -> String -> Bool
 hasChar =
@@ -52,9 +52,9 @@ toInstruction s =
         _ ->
             Nothing
 
-parseInstructions :: String -> [Instruction]
+parseInstructions :: [String] -> [Instruction]
 parseInstructions =
-    catMaybes . (fmap toInstruction) . lines
+    Maybe.mapMaybe toInstruction
 
 resolve :: Scene -> [Stack]
 resolve (Scene stacks instructions) =
@@ -66,7 +66,7 @@ moveCrates stacks (Instruction n from to) =
         map = Map.fromList (fmap toTuple stacks)
         fromCrates = Maybe.fromJust (Map.lookup from map)
         toCrates = Maybe.fromJust (Map.lookup to map)
-        unloadedCrates = reverse (take n (reverse fromCrates))
+        unloadedCrates = take n (reverse fromCrates)
         remainingCrates = reverse (drop n (reverse fromCrates))
         map' = Map.insert from remainingCrates map
         map'' = Map.insert to (toCrates ++ unloadedCrates) map'
@@ -92,13 +92,25 @@ stackKey (Stack k _) =
         
 lastCrate :: Stack -> Char
 lastCrate (Stack _ crates) =
-    toChar (head crates)
+    toChar (last crates)
         
 toChar :: Crate -> Char
 toChar (Crate c) =
     c
 
+example :: Scene
+example =
+    Scene [toStack "1ZN", toStack "2MCD", toStack "3P"] (parseInstructions
+                                                            [ "move 1 from 2 to 1"
+                                                            , "move 3 from 1 to 3"
+                                                            , "move 2 from 2 to 1"
+                                                            , "move 1 from 1 to 2"
+                                                            ])
+
+exampleSolution :: String
+exampleSolution =
+    onTop (resolve example)
+
 main = do
     text <- readFile "input-5"
-    print (resolve (toScene text))
     print (onTop (resolve (toScene text)))
