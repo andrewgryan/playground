@@ -92,7 +92,7 @@ stackKey (Stack k _) =
         
 lastCrate :: Stack -> Char
 lastCrate (Stack _ crates) =
-    toChar (last crates)
+    toChar (head crates)
         
 toChar :: Crate -> Char
 toChar (Crate c) =
@@ -100,4 +100,5 @@ toChar (Crate c) =
 
 main = do
     text <- readFile "input-5"
+    print (resolve (toScene text))
     print (onTop (resolve (toScene text)))
