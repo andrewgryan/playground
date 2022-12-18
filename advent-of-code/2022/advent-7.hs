@@ -92,6 +92,10 @@ cd name (fs, bs) =
         (File _ _) ->
             Nothing
 
+cdRoot :: Session -> Session
+cdRoot (fs, []) = (fs, [])
+cdRoot session = cdRoot (Maybe.fromJust (cd ".." session))
+
 exists :: String -> Session -> Bool
 exists name (Directory _ items, _) =
     any (hasName name) items
@@ -132,13 +136,15 @@ blankSession =
 
 interpret :: [Line] -> FileSystem
 interpret lines =
-    toFileSystem (foldl interpretLine blankSession lines)
+    toFileSystem (cdRoot (Maybe.fromJust (foldl interpretLine (return blankSession) lines)))
         
-interpretLine :: Session -> Line -> Session
+interpretLine :: Maybe Session -> Line -> Maybe Session
 interpretLine session line =
     case line of
-        Command (CD s) -> session
+        Command (CD "..") -> session >>= cd ".."
+        Command (CD s) -> session >>= mkdir s >>= cd s
         Command LS -> session
+        FileType (Listing size name) -> session >>= touch (File size name)
         FileType _ -> session
 
 
