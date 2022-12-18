@@ -77,6 +77,27 @@ exampleSystem =
 data Crumb = Crumb Name [FileSystem] [FileSystem] deriving Show
 type Session = (FileSystem, [Crumb])
 
+cd :: String -> Session -> Maybe Session
+cd ".." (fs, Crumb name lhs rhs:bs) =
+    Just (Directory name (lhs ++ [fs] ++ rhs), bs)
+
+cd name (fs, bs) =
+    case fs of
+        (Directory parentName items) ->
+            let
+                (ls, item:rs) = break (hasName name) items
+                crumb = Crumb parentName ls rs
+            in
+            Just (item, crumb:bs)
+        (File _ _) ->
+            Nothing
+
+hasName :: String -> FileSystem -> Bool
+hasName name (File _ s) =
+    name == s
+hasName name (Directory s _) =
+    name == s
+
 mkdir :: String -> Session -> Maybe Session
 mkdir dirName (fs, bs) =
     let
@@ -92,12 +113,13 @@ toFileSystem :: Session -> FileSystem
 toFileSystem (fs, _) =
     fs
 
+blankSession :: Session
+blankSession =
+    (blank, [])
+
 interpret :: [Line] -> FileSystem
 interpret lines =
-    let
-        session = (blank, [])
-    in
-    toFileSystem (foldl interpretLine session lines)
+    toFileSystem (foldl interpretLine blankSession lines)
         
 interpretLine :: Session -> Line -> Session
 interpretLine session line =
