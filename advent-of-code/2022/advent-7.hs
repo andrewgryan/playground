@@ -14,7 +14,7 @@ data Command
         
 data FileType
     = Dir String
-    | File Int String
+    | Listing Int String
     deriving (Show, Eq)
 
 parseLine :: String -> Maybe Line
@@ -37,57 +37,75 @@ toFileType :: [String] -> Maybe FileType
 toFileType parts =
     case parts of
         ("dir":dir:_) -> Just (Dir dir)
-        (size:name:_) -> Just (File (read size :: Int) name)
+        (size:name:_) -> Just (Listing (read size :: Int) name)
         _ -> Nothing
-                
-data FileSystem = Nil | Node FileType FileSystem FileSystem deriving Show
-data Terminal = Terminal [String] FileSystem deriving Show
 
+type Size = Int
+type Name = String
 
-newTerminal :: Terminal
-newTerminal =
-    Terminal [] Nil
+data FileSystem
+    = Directory Name [FileSystem]
+    | File Size Name
+    deriving Show
 
-process :: Terminal -> Line -> Terminal
-process term line =
+blank :: FileSystem
+blank =
+    Directory "root" []
+
+exampleSystem =
+    Directory "root"
+        [ Directory "/"
+            [ Directory "a"
+                [ Directory "e"
+                    [ File 584 "i"
+                    ]
+                , File 29116 "f"
+                , File 2557 "g"
+                , File 62596 "h.lst"
+                ]
+            , File 14848514 "b.txt"
+            , File 8504156 "c.dat"
+            , Directory "d"
+                [ File 4060174 "j"
+                , File 8033020 "d.log"
+                , File 5626152 "d.ext"
+                , File 7214296 "k"
+                ]
+            ]
+        ]
+
+data Crumb = Crumb Name [FileSystem] [FileSystem] deriving Show
+type Session = (FileSystem, [Crumb])
+
+mkdir :: String -> Session -> Maybe Session
+mkdir dirName (fs, bs) =
+    let
+        dir = Directory dirName []
+    in
+    case fs of
+        (Directory parentName items) ->
+            Just (Directory parentName (dir:items), bs)
+        (File _ _) ->
+            Nothing
+
+toFileSystem :: Session -> FileSystem
+toFileSystem (fs, _) =
+    fs
+
+interpret :: [Line] -> FileSystem
+interpret lines =
+    let
+        session = (blank, [])
+    in
+    toFileSystem (foldl interpretLine session lines)
+        
+interpretLine :: Session -> Line -> Session
+interpretLine session line =
     case line of
-        Command cmd ->
-            processCmd cmd term
-        FileType ft ->
-            processFt ft term
+        Command (CD s) -> session
+        Command LS -> session
+        FileType _ -> session
 
-processCmd :: Command -> Terminal -> Terminal
-processCmd cmd (Terminal path fs) =
-    case cmd of
-        CD d ->
-            let
-               newPath = cd d path
-            in
-            Terminal newPath (mkdir newPath fs)
-        _ -> Terminal path fs
-                
-mkdir :: [String] -> FileSystem -> FileSystem
-mkdir path fs =
-    case reverse path of
-        [] -> fs
-        (x:xs) ->
-            case fs of
-                Nil -> mkdir xs (Node (Dir x) Nil Nil)
-                Node d left right ->
-                    if d == Dir x then
-                        mkdir xs right
-                    else
-                        mkdir xs left
-
-cd :: String -> [String] -> [String]
-cd subdir path =
-   case subdir of
-       ".." -> tail path
-       _ -> subdir : path 
-
-processFt :: FileType -> Terminal -> Terminal
-processFt ft term =
-    term
 
 example :: [String]
 example = [ "$ cd /"
@@ -118,4 +136,5 @@ example = [ "$ cd /"
 
 main = do
     let commands = Maybe.mapMaybe parseLine example
-    print (foldl process newTerminal commands)
+    mapM_ print commands
+    print (interpret commands)
