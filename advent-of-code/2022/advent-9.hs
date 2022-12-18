@@ -99,10 +99,11 @@ example =
   ]
 
 main = do
-    -- EXAMPLE
-    -- let instructions = Maybe.mapMaybe toInstruction example
-    -- Part 1 puzzle input
     text <- readFile "input-9"
-    let instructions = Maybe.mapMaybe toInstruction (lines text)
+    let mode = "example"
+    let instructions = if mode == "example" then
+            Maybe.mapMaybe toInstruction example
+        else
+            Maybe.mapMaybe toInstruction (lines text)
     let (rope, tailPositions) = foldl move (newRope, [(0, 0)]) instructions
     print (length (Set.fromList tailPositions))
