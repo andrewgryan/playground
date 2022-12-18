@@ -1,5 +1,6 @@
 import qualified Data.Maybe as Maybe
 import Data.List.Split (splitOn)
+import qualified Data.List as List
 
 
 data Line
@@ -209,6 +210,17 @@ main = do
     let commands = Maybe.mapMaybe parseLine (lines text)
     let filesystem = interpret commands
     let sizes = diskUsage filesystem
+        
+    -- Solution part 1
     let sizes' = filter ((100000 >=) . snd) sizes
     let result = sum (fmap snd sizes')
-    print result
+    
+    -- Solution part 2
+    let totalSize = 70000000
+    let used = usage filesystem
+    let unused = totalSize - used
+    let need = 30000000 - unused
+    let sizes'' = filter ((need <) . snd) sizes
+    let ordered = List.sortOn snd sizes''
+    print need
+    print (head ordered)
