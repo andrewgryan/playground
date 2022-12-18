@@ -79,39 +79,62 @@ example =
 
 main = do
   -- Example
-  let trees = fromList example
-  -- text <- readFile "input-8"
-  -- let trees = fromList (lines text)
+  -- let trees = fromList example
+  text <- readFile "input-8"
+  let trees = fromList (lines text)
   -- print (solutionPart1 trees)
   print (solutionPart2 trees)
 
 solutionPart2 :: [[Tree]] -> Int
-solutionPart2 _ =
-  8
+solutionPart2 trees =
+  maximum (fmap (scenicScore trees) (indices (shape trees)))
+  
+scenicScore :: [[Tree]] -> (Int, Int) -> Int
+scenicScore trees (i, j) =
+  let
+    tree = trees !! i !! j
+  in
+  ( view tree (reverse (north trees (i, j)))
+  * view tree (south trees (i, j))
+  * view tree (east trees (i, j))
+  * view tree (reverse (west trees (i, j)))
+  )
+
+view :: Tree -> [Tree] -> Int
+view tree trees =
+  score tree trees 0
+  
+score :: Tree -> [Tree] -> Int -> Int
+score center trees tally =
+  case trees of
+    [] -> tally
+    (t:ts) ->
+      if height center > height t then
+        score center ts (tally + 1)
+      else
+        tally + 1
 
 north :: [[Tree]] -> (Int, Int) -> [Tree]
 north trees (i, j) =
-  take j (col i trees)
+  take i (col j trees)
 
 south :: [[Tree]] -> (Int, Int) -> [Tree]
 south trees (i, j) =
   let
     (_, ny) = shape trees
   in
-  (fromEnd (ny - (j + 1)) . col i) trees
+  (fromEnd (ny - (i + 1)) . col j) trees
 
 east :: [[Tree]] -> (Int, Int) -> [Tree]
 east trees (i, j) =
   let
     (nx, _) = shape trees
   in
-  (fromEnd (nx - (i + 1)) . row j) trees
+  (fromEnd (nx - (j + 1)) . row i) trees
 
 west :: [[Tree]] -> (Int, Int) -> [Tree]
 west trees (i, j) =
-  take i (row j trees)
-
-
+  take j (row i trees)
 
 fromEnd :: Int -> [Tree] -> [Tree]
 fromEnd n =
