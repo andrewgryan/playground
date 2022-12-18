@@ -78,11 +78,49 @@ example =
   ]
 
 main = do
-  -- example
-  -- let trees = fromList example
-  text <- readFile "input-8"
-  let trees = fromList (lines text)
-  let pts = indices (shape trees)
-  let trees' = filter (visible trees) pts
-  print (length pts)
-  print (length trees')
+  -- Example
+  let trees = fromList example
+  -- text <- readFile "input-8"
+  -- let trees = fromList (lines text)
+  -- print (solutionPart1 trees)
+  print (solutionPart2 trees)
+
+solutionPart2 :: [[Tree]] -> Int
+solutionPart2 _ =
+  8
+
+north :: [[Tree]] -> (Int, Int) -> [Tree]
+north trees (i, j) =
+  take j (col i trees)
+
+south :: [[Tree]] -> (Int, Int) -> [Tree]
+south trees (i, j) =
+  let
+    (_, ny) = shape trees
+  in
+  (fromEnd (ny - (j + 1)) . col i) trees
+
+east :: [[Tree]] -> (Int, Int) -> [Tree]
+east trees (i, j) =
+  let
+    (nx, _) = shape trees
+  in
+  (fromEnd (nx - (i + 1)) . row j) trees
+
+west :: [[Tree]] -> (Int, Int) -> [Tree]
+west trees (i, j) =
+  take i (row j trees)
+
+
+
+fromEnd :: Int -> [Tree] -> [Tree]
+fromEnd n =
+  reverse . take n . reverse
+
+solutionPart1 :: [[Tree]] -> Int
+solutionPart1 trees =
+  let
+      pts = indices (shape trees)
+      trees' = filter (visible trees) pts
+  in
+  length trees'
