@@ -1,5 +1,6 @@
 import Data.List.Split (splitOn)
 import qualified Data.Maybe as Maybe
+import qualified Data.Set as Set
 
 type Position = (Int, Int)
 data Rope = Rope Position Position deriving Show
@@ -8,25 +9,23 @@ newRope :: Rope
 newRope =
     Rope (0, 0) (0, 0)
 
-move :: Rope -> Instruction -> Rope
+move :: (Rope, [Position]) -> Instruction -> (Rope, [Position])
 move rope (Instruction direction times) =
-    multiMove times rope direction
+    case times of
+        0 ->
+            rope
+        n ->
+            move (moveOnce rope direction) (Instruction direction (times - 1))
 
-multiMove :: Int -> Rope -> Direction -> Rope
-multiMove 0 rope _ =
-    rope
-multiMove n rope direction =
-    multiMove (n - 1) (moveOnce rope direction) direction
-
-moveOnce :: Rope -> Direction -> Rope
-moveOnce (Rope head tail) direction =
+moveOnce :: (Rope, [Position]) -> Direction -> (Rope, [Position])
+moveOnce (Rope head tail, tailPositions) direction =
     let
         head' = translate head (vector direction)
     in
     if closeEnough head' tail then
-        Rope head' tail
+        (Rope head' tail, tailPositions)
     else
-        Rope head' (snap head' tail)
+        (Rope head' (snap head' tail), snap head' tail:tailPositions)
 
 snap :: Position -> Position -> Position
 snap head tail =
@@ -99,10 +98,11 @@ example =
   , "R 2"
   ]
 
-solve :: [Instruction] -> Int
-solve instructions =
-  0
-
 main = do
-  let instructions = Maybe.mapMaybe toInstruction example
-  print (foldl move newRope instructions)
+    -- EXAMPLE
+    -- let instructions = Maybe.mapMaybe toInstruction example
+    -- Part 1 puzzle input
+    text <- readFile "input-9"
+    let instructions = Maybe.mapMaybe toInstruction (lines text)
+    let (rope, tailPositions) = foldl move (newRope, [(0, 0)]) instructions
+    print (length (Set.fromList tailPositions))
