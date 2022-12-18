@@ -147,6 +147,21 @@ interpretLine session line =
         FileType (Listing size name) -> session >>= touch (File size name)
         FileType _ -> session
 
+findDirs :: FileSystem -> [String]
+findDirs fs =
+    findRecursive fs []
+
+findRecursive :: FileSystem -> [String] -> [String]
+findRecursive (File _ _) dirs =
+    dirs
+findRecursive (Directory name items) dirs =
+    name:dirs ++ (items >>= findDirs)
+
+usage :: FileSystem -> Int
+usage (File size _) =
+    size
+usage (Directory _ items) =
+    sum (fmap usage items)
 
 example :: [String]
 example = [ "$ cd /"
@@ -177,5 +192,5 @@ example = [ "$ cd /"
 
 main = do
     let commands = Maybe.mapMaybe parseLine example
-    mapM_ print commands
-    print (interpret commands)
+    let filesystem = interpret commands
+    print (findDirs filesystem)
