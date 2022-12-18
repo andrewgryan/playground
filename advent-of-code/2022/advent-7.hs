@@ -92,6 +92,12 @@ cd name (fs, bs) =
         (File _ _) ->
             Nothing
 
+exists :: String -> Session -> Bool
+exists name (Directory _ items, _) =
+    any (hasName name) items
+exists name (File _ fileName, _) =
+    name == fileName
+
 hasName :: String -> FileSystem -> Bool
 hasName name (File _ s) =
     name == s
@@ -103,7 +109,10 @@ mkdir dirName session =
     let
         dir = Directory dirName []
     in
-    touch dir session
+    if exists dirName session then
+        Just session
+    else
+        touch dir session
 
 touch :: FileSystem -> Session -> Maybe Session
 touch item (fs, bs) =
