@@ -147,6 +147,20 @@ interpretLine session line =
         FileType (Listing size name) -> session >>= touch (File size name)
         FileType _ -> session
 
+diskUsage :: FileSystem -> [(String, Int)]
+diskUsage fs =
+    diskUsage' fs []
+
+diskUsage' :: FileSystem -> [(String, Int)] -> [(String, Int)]
+diskUsage' (File _ _) sizes =
+    sizes
+diskUsage' (Directory name items) sizes =
+    let
+        size = usage (Directory name items)
+    in
+    ((name, size):sizes) ++ (items >>= diskUsage)
+
+
 findDirs :: FileSystem -> [String]
 findDirs fs =
     findRecursive fs []
@@ -191,6 +205,10 @@ example = [ "$ cd /"
 
 
 main = do
-    let commands = Maybe.mapMaybe parseLine example
+    text <- readFile "input-7"
+    let commands = Maybe.mapMaybe parseLine (lines text)
     let filesystem = interpret commands
-    print (findDirs filesystem)
+    let sizes = diskUsage filesystem
+    let sizes' = filter ((100000 >=) . snd) sizes
+    let result = sum (fmap snd sizes')
+    print result
