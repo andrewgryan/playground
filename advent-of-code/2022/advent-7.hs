@@ -99,13 +99,17 @@ hasName name (Directory s _) =
     name == s
 
 mkdir :: String -> Session -> Maybe Session
-mkdir dirName (fs, bs) =
+mkdir dirName session =
     let
         dir = Directory dirName []
     in
+    touch dir session
+
+touch :: FileSystem -> Session -> Maybe Session
+touch item (fs, bs) =
     case fs of
         (Directory parentName items) ->
-            Just (Directory parentName (dir:items), bs)
+            Just (Directory parentName (item:items), bs)
         (File _ _) ->
             Nothing
 
