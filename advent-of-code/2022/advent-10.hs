@@ -3,15 +3,21 @@ import qualified Data.Maybe as Maybe
 
 type Cycle = Int
 type Register = Int
-data CPU = CPU Cycle Register
+data CPU = CPU Cycle Register deriving Show
 
 boot :: CPU
 boot =
   CPU 0 1
   
 execute :: [Op] -> CPU -> CPU
-execute ops cpu =
+execute [] cpu =
   cpu
+execute (op:ops) (CPU clock register) =
+  case op of
+    Noop ->
+      execute ops (CPU (clock + 1) register)
+    Addx n ->
+      execute ops (CPU (clock + 2) (register + n))
 
 data Op
   = Noop
@@ -33,4 +39,5 @@ smallProgram =
   ]
 
 main = do
-  print (Maybe.mapMaybe toOp smallProgram)
+  let ops = Maybe.mapMaybe toOp smallProgram
+  print (execute ops boot)
