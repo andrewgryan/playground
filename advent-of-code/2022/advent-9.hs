@@ -15,17 +15,17 @@ move rope (Instruction direction times) =
         0 ->
             rope
         n ->
-            move (moveOnce rope direction) (Instruction direction (times - 1))
+            move (moveOnce rope direction) (Instruction direction (n - 1))
 
 moveOnce :: (Rope, [Position]) -> Direction -> (Rope, [Position])
 moveOnce (rope, tailPositions) direction =
     let
         front = head rope
-        end = last rope
         front' = translate front (vector direction)
-        pairs = zip rope (tail rope)
-        end' = fmap magnet pairs
-        rope' = front':end'
+        knots = tail rope
+        pairs = zip (front':knots) knots
+        knots' = fmap magnet pairs
+        rope' = front':knots'
     in
     (rope', last rope':tailPositions)
 
@@ -115,6 +115,41 @@ largerExample =
   , "U 20"
   ]
 
+
+chart :: [Position] -> String
+chart positions =
+    let
+        x0 = minimum (fmap fst positions) - 5
+        y0 = minimum (fmap snd positions) - 5
+        x1 = maximum (fmap fst positions) + 5
+        y1 = maximum (fmap snd positions) + 5
+        dw = x1 - x0
+        dh = y1 - y0
+        blank = replicate dh (replicate dw '*')
+        glyphs = foldl (plotPosition (x0, y0)) blank positions
+    in
+    unlines (reverse glyphs)
+
+plotPosition :: Position -> [[Char]] -> Position -> [[Char]]
+plotPosition (x0, y0) grid (xp, yp) =
+    let
+        i = xp - x0
+        j = yp - y0
+        (lhs, rhs) = splitAt j grid
+    in
+    case rhs of
+        [] -> lhs
+        (x:xs) -> lhs ++ insert i x:xs
+        
+insert :: Int -> [Char] -> [Char]
+insert i s =
+    let
+        (lhs, rhs) = splitAt i s
+    in
+    case rhs of
+        [] -> lhs
+        (_:xs) -> lhs ++ '#':xs
+
 main = do
     text <- readFile "input-9"
     let mode = "example"
@@ -123,6 +158,9 @@ main = do
         else
             Maybe.mapMaybe toInstruction (lines text)
     -- Part 1: segments = 2
-    let segments = 9
+    let segments = 10
     let (rope, tailPositions) = foldl move (newRope segments, [(0, 0)]) instructions
-    print (length (Set.fromList tailPositions))
+    print rope
+    let uniquePositions = Set.fromList tailPositions
+    putStr (chart (Set.toList uniquePositions))
+    print (length uniquePositions)
