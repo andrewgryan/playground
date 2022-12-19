@@ -3,11 +3,11 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
 type Position = (Int, Int)
-data Rope = Rope Position Position deriving Show
+type Rope = [Position]
 
-newRope :: Rope
-newRope =
-    Rope (0, 0) (0, 0)
+newRope :: Int -> Rope
+newRope n =
+    replicate n (0, 0)
 
 move :: (Rope, [Position]) -> Instruction -> (Rope, [Position])
 move rope (Instruction direction times) =
@@ -18,14 +18,23 @@ move rope (Instruction direction times) =
             move (moveOnce rope direction) (Instruction direction (times - 1))
 
 moveOnce :: (Rope, [Position]) -> Direction -> (Rope, [Position])
-moveOnce (Rope head tail, tailPositions) direction =
+moveOnce (rope, tailPositions) direction =
     let
-        head' = translate head (vector direction)
+        front = head rope
+        end = last rope
+        front' = translate front (vector direction)
+        pairs = zip rope (tail rope)
+        end' = fmap magnet pairs
+        rope' = front':end'
     in
-    if closeEnough head' tail then
-        (Rope head' tail, tailPositions)
+    (rope', last rope':tailPositions)
+
+magnet :: (Position, Position) -> Position
+magnet (front, end) =
+    if closeEnough front end then
+        end
     else
-        (Rope head' (snap head' tail), snap head' tail:tailPositions)
+        snap front end
 
 snap :: Position -> Position -> Position
 snap head tail =
@@ -54,10 +63,6 @@ vector d =
 closeEnough :: Position -> Position -> Bool
 closeEnough (hx, hy) (tx, ty) =
     (abs (hx - tx) <= 1) && (abs (hy - ty) <= 1)
-
-tailPosition :: Rope -> Position
-tailPosition (Rope _ position) =
-    position
 
 data Direction
     = U
@@ -98,12 +103,26 @@ example =
   , "R 2"
   ]
 
+largerExample :: [String]
+largerExample =
+  [ "R 5"
+  , "U 8"
+  , "L 8"
+  , "D 3"
+  , "R 17"
+  , "D 10"
+  , "L 25"
+  , "U 20"
+  ]
+
 main = do
     text <- readFile "input-9"
     let mode = "example"
     let instructions = if mode == "example" then
-            Maybe.mapMaybe toInstruction example
+            Maybe.mapMaybe toInstruction largerExample
         else
             Maybe.mapMaybe toInstruction (lines text)
-    let (rope, tailPositions) = foldl move (newRope, [(0, 0)]) instructions
+    -- Part 1: segments = 2
+    let segments = 9
+    let (rope, tailPositions) = foldl move (newRope segments, [(0, 0)]) instructions
     print (length (Set.fromList tailPositions))
