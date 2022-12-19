@@ -23,11 +23,14 @@ moveOnce (rope, tailPositions) direction =
         front = head rope
         front' = translate front (vector direction)
         knots = tail rope
-        pairs = zip (front':knots) knots
-        knots' = fmap magnet pairs
-        rope' = front':knots'
+        rope' = snapAll (front':knots)
     in
     (rope', last rope':tailPositions)
+
+snapAll :: [Position] -> [Position]
+snapAll [] = []
+snapAll [h] = [h]
+snapAll (x:y:zs) = x:snapAll (magnet (x, y):zs)
 
 magnet :: (Position, Position) -> Position
 magnet (front, end) =
@@ -152,7 +155,7 @@ insert i s =
 
 main = do
     text <- readFile "input-9"
-    let mode = "example"
+    let mode = "input"
     let instructions = if mode == "example" then
             Maybe.mapMaybe toInstruction largerExample
         else
