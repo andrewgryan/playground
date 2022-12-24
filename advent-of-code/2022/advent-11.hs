@@ -122,9 +122,64 @@ space = do
 isSpace :: Char -> Bool
 isSpace = (== ' ')
 
+
+-- Equations
+
+data Expression = Value Int | Binary Expression Char Expression deriving Show
+data Equation = Equation String Expression deriving Show
+
+equation :: Parser Equation
+equation = do
+  name <- identifier
+  space
+  char '='
+  space
+  Equation name <$> expression
+
+expression :: Parser Expression
+expression = do binary <|> (Value <$> integer)
+
+value :: Parser Expression
+value =
+  Value <$> integer
+
+binary :: Parser Expression
+binary = do
+  lhs <- expression
+  space
+  op <- operation
+  space
+  rhs <- expression
+  return (Binary lhs op rhs)
+  
+operation :: Parser Char
+operation =
+  satisfy isOp
+
+isOp :: Char -> Bool
+isOp c =
+  case c of
+    '+' -> True
+    '-' -> True
+    '*' -> True
+    '/' -> True
+    _ -> False
+
+identifier :: Parser String
+identifier = token ident
+
+ident :: Parser String
+ident = string "old" <|> string "new"
+
 -- Monkey parser
 
 data Monkey = Monkey Int [Int] deriving Show
+
+startingItems :: Parser [Int]
+startingItems = do
+  string "Starting items:"
+  space
+  integers
 
 integers :: Parser [Int]
 integers = do
@@ -144,9 +199,7 @@ monkey = do
   char ':'
   newline
   space
-  string "Starting items:"
-  space
-  items <- integers
+  items <- startingItems
   return (Monkey n items)
 
 -- Puzzle
