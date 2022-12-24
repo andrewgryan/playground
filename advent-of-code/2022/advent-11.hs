@@ -101,6 +101,11 @@ isDigit c =
 char :: Char -> Parser Char
 char c = satisfy (== c)
 
+newline :: Parser ()
+newline = do
+  char '\n'
+  return ()
+
 -- Handling space
 token :: Parser a -> Parser a
 token p = do
@@ -119,13 +124,30 @@ isSpace = (== ' ')
 
 -- Monkey parser
 
-newtype Monkey = Monkey Int deriving Show
+data Monkey = Monkey Int [Int] deriving Show
+
+integers :: Parser [Int]
+integers = do
+  x <- integer
+  xs <- some (do
+      space
+      char ','
+      space
+      integer)
+  return (x:xs)
 
 monkey :: Parser Monkey
 monkey = do
   string "Monkey"
   space
-  Monkey <$> nat
+  n <- nat
+  char ':'
+  newline
+  space
+  string "Starting items:"
+  space
+  items <- integers
+  return (Monkey n items)
 
 -- Puzzle
 example :: String
