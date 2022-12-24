@@ -1,8 +1,9 @@
+import Control.Applicative
 
-type Operation = String
-type Item = Int
-data Test = Test String String String
-data Monkey = Monkey Int [Item] Operation Test
+-- type Operation = String
+-- type Item = Int
+-- data Test = Test String String String
+-- data Monkey = Monkey Int [Item] Operation Test
 
 
 -- Hand-rolled parsing library
@@ -34,60 +35,99 @@ instance Monad Parser where
       Nothing -> Nothing
       Just (v, out) -> parse (f v) out)
 
+-- Choices
+instance Alternative Parser where
+  -- empty :: Parser a
+  empty = P (const Nothing)
+  
+  -- (<|>) :: Parser a -> Parser a -> Parser a
+  p <|> q = P (\input -> case parse p input of
+    Nothing -> parse q input
+    Just (v, out) -> Just (v, out)) 
+
 parse :: Parser a -> String -> Maybe (a, String)
 parse (P p) = p
 
--- nat :: Parser Int
--- nat = do
---   xs <- some digit
---   return (read xs)
+item :: Parser Char
+item = P (\input -> case input of
+  [] -> Nothing
+  (x:xs) -> Just (x, xs))
+
+satisfy :: (Char -> Bool) -> Parser Char
+satisfy p = do
+  x <- item
+  if p x then
+    return x
+  else
+    empty
+
+string :: String -> Parser String
+string [] = return []
+string (x:xs) = do
+  char x
+  string xs
+  return (x:xs)
 
 integer :: Parser Int
-integer = P (\s ->
-  case parse (some digit) s of
-    Just (d, s') -> Just (read d :: Int, s')
-    _ -> Nothing)
+integer = do
+  char '-'
+  n <- nat
+  return (-n)
+  <|> nat
 
-some :: Parser a -> Parser [a]
-some p = P (\s ->
-  case parse p s of
-    Just (v, s') ->
-      case parse (some p) s' of
-         Just (vs, r) -> Just (v:vs, r)
-         _ -> Just ([v], s')
-    _ -> Nothing)
-    
+nat :: Parser Int
+nat = do
+  xs <- some digit
+  return (read xs)
+
 digit :: Parser Char
-digit = P digit'
+digit = satisfy isDigit
 
-digit' :: String -> Maybe (Char, String)
-digit' s =
-  case s of
-    [] -> Nothing
-    (c:cs) ->
-      case c of
-        '0' -> Just (c, cs)
-        '1' -> Just (c, cs)
-        '2' -> Just (c, cs)
-        '3' -> Just (c, cs)
-        '4' -> Just (c, cs)
-        '5' -> Just (c, cs)
-        '6' -> Just (c, cs)
-        '7' -> Just (c, cs)
-        '8' -> Just (c, cs)
-        '9' -> Just (c, cs)
-        _ -> Nothing
+isDigit :: Char -> Bool
+isDigit c =
+    case c of
+      '0' -> True
+      '1' -> True
+      '2' -> True
+      '3' -> True
+      '4' -> True
+      '5' -> True
+      '6' -> True
+      '7' -> True
+      '8' -> True
+      '9' -> True
+      _ -> False
 
 char :: Char -> Parser Char
-char c = P (char' c)
+char c = satisfy (== c)
 
-char' :: Char -> String -> Maybe (Char, String)
-char' c s =
-    case s of
-      [] -> Nothing
-      (x:xs) -> if x == c then Just (x, xs) else Nothing
+-- Handling space
+token :: Parser a -> Parser a
+token p = do
+  space
+  v <- p
+  space
+  return v
 
+space :: Parser ()
+space = do
+  many (satisfy isSpace)
+  return ()
 
+isSpace :: Char -> Bool
+isSpace = (== ' ')
+
+-- Monkey parser
+
+newtype Monkey = Monkey Int deriving Show
+
+monkey :: Parser Monkey
+monkey = do
+  string "Monkey"
+  space
+  Monkey <$> nat
+
+-- Puzzle
 example :: String
 example = unlines
   [ "Monkey 0:"
