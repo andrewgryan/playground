@@ -2,17 +2,14 @@ import Control.Applicative
 import qualified Parsing
 import qualified Data.Maybe as Maybe
 
--- type Operation = String
--- type Item = Int
--- data Test = Test String String String
--- data Monkey = Monkey Int [Item] Operation Test
 
+-- Operation parser
 
 -- Monkey parser
 data Monkey = Monkey
   { index :: Int
   , items :: [Int]
-  , operation :: String
+  , operation :: Expression
   , test :: String
   , ifTrue :: String
   , ifFalse :: String
@@ -58,7 +55,9 @@ monkey = do
   Parsing.space
   items <- startingItems
   Parsing.newline
-  operation' <- keyword "Operation:"
+  Parsing.space
+  operation' <- parseOperation
+  Parsing.space
   Parsing.newline
   test' <- keyword "Test:"
   Parsing.newline
@@ -109,9 +108,47 @@ example = unlines
   , "    If false: throw to monkey 0"
   , ""
   ]
+  
+-- Parse operation
+-- old + 9
+data Op = Add | Multiply deriving Show
+data Term = Old | Value Int deriving Show
+data Expression = Binary Op Term Term deriving Show
+
+parseOperation :: Parsing.Parser Expression
+parseOperation = do
+  Parsing.string "Operation: new ="
+  Parsing.space
+  parseExpression
+
+parseExpression :: Parsing.Parser Expression
+parseExpression = do
+  left <- parseTerm
+  Parsing.space
+  op <- parseOp
+  Parsing.space
+  right <- parseTerm
+  return (Binary op left right)
+
+parseOp :: Parsing.Parser Op
+parseOp = do
+  Parsing.char '+'
+  return Add
+  <|> do
+  Parsing.char '*'
+  return Multiply
+  
+parseTerm :: Parsing.Parser Term
+parseTerm = do
+  Parsing.string "old"
+  return Old
+  <|> do
+  n <- Parsing.nat
+  return (Value n)
 
 main :: IO ()
 main = do
   text <- readFile "input-11"
   let (monkeys, left) = Maybe.fromJust (Parsing.parse (newlineSeparated monkey) text)
-  print monkeys
+  -- print (fmap operation monkeys)
+  print (head monkeys)
