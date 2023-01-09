@@ -145,6 +145,24 @@ parseTerm = do
   <|> do
   n <- Parsing.nat
   return (Value n)
+  
+eval :: Expression -> Int -> Int
+eval (Binary op lhs rhs) n =
+  let
+    left = deref lhs n
+    right = deref rhs n
+  in
+  case op of
+    Add ->
+      left + right
+    Multiply ->
+      left * right
+
+deref :: Term -> Int -> Int
+deref Old n =
+  n
+deref (Value m) _ =
+  m
 
 main :: IO ()
 main = do
