@@ -8,12 +8,13 @@ import qualified Data.Maybe as Maybe
 
 -- Monkey parser
 newtype Throw = ToMonkey Int deriving Show
+newtype Test = DivisibleBy Int deriving Show
 
 data Monkey = Monkey
   { index :: Int
   , items :: [Int]
   , operation :: Expression
-  , test :: String
+  , test :: Test
   , ifTrue :: Throw
   , ifFalse :: Throw
   } deriving Show
@@ -62,7 +63,10 @@ monkey = do
   operation' <- parseOperation
   space
   newline
-  test' <- keyword "Test:"
+  space
+  string "Test:"
+  space
+  test' <- parseTest
   newline
   space
   string "If true:"
@@ -82,7 +86,12 @@ monkey = do
     , ifTrue = ifTrue'
     , ifFalse = ifFalse'
     }
-    
+
+parseTest :: Parsing.Parser Test
+parseTest = do
+  string "divisible by"
+  space
+  DivisibleBy <$> nat
 
 keyword :: String -> Parsing.Parser String
 keyword key = do
@@ -184,4 +193,4 @@ main = do
   text <- readFile "input-11"
   let (monkeys, left) = Maybe.fromJust (Parsing.parse (newlineSeparated monkey) text)
   -- print (fmap operation monkeys)
-  print (head monkeys)
+  print monkeys
