@@ -4,8 +4,6 @@ import Parsing (string, nat, newline, space)
 import qualified Data.Maybe as Maybe
 
 
--- Operation parser
-
 -- Monkey parser
 newtype Throw = ToMonkey Int deriving Show
 newtype Test = DivisibleBy Int deriving Show
