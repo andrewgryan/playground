@@ -1,18 +1,21 @@
 import Control.Applicative
 import qualified Parsing
+import Parsing (string, nat, newline, space)
 import qualified Data.Maybe as Maybe
 
 
 -- Operation parser
 
 -- Monkey parser
+newtype Throw = ToMonkey Int deriving Show
+
 data Monkey = Monkey
   { index :: Int
   , items :: [Int]
   , operation :: Expression
   , test :: String
-  , ifTrue :: String
-  , ifFalse :: String
+  , ifTrue :: Throw
+  , ifFalse :: Throw
   } deriving Show
 
 startingItems :: Parsing.Parser [Int]
@@ -51,20 +54,26 @@ newlineSeparated p = do
 monkey :: Parsing.Parser Monkey
 monkey = do
   id <- monkeyId
-  Parsing.newline
-  Parsing.space
+  newline
+  space
   items <- startingItems
-  Parsing.newline
-  Parsing.space
+  newline
+  space
   operation' <- parseOperation
-  Parsing.space
-  Parsing.newline
+  space
+  newline
   test' <- keyword "Test:"
-  Parsing.newline
-  ifTrue' <- keyword "If true:"
-  Parsing.newline
-  ifFalse' <- keyword "If false:"
-  Parsing.newline
+  newline
+  space
+  string "If true:"
+  space
+  ifTrue' <- throw
+  newline
+  space
+  string "If false:"
+  space
+  ifFalse' <- throw
+  newline
   return Monkey
     { index = id
     , items = items
@@ -114,6 +123,12 @@ example = unlines
 data Op = Add | Multiply deriving Show
 data Term = Old | Value Int deriving Show
 data Expression = Binary Op Term Term deriving Show
+
+throw :: Parsing.Parser Throw
+throw = do
+  string "throw to monkey"
+  space
+  ToMonkey <$> nat
 
 parseOperation :: Parsing.Parser Expression
 parseOperation = do
