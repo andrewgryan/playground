@@ -167,8 +167,7 @@ parseTerm = do
   Parsing.string "old"
   return Old
   <|> do
-  n <- Parsing.nat
-  return (Value n)
+  Value <$> nat
   
 eval :: Expression -> Int -> Int
 eval (Binary op lhs rhs) n =
@@ -187,10 +186,22 @@ deref Old n =
   n
 deref (Value m) _ =
   m
+  
+-- Keep away
+keepAway :: [Monkey] -> [Monkey]
+keepAway monkeys =
+  monkeys
+
+inspectItem :: Monkey -> Int -> Int
+inspectItem monkey =
+  eval (operation monkey)
+  
+relief :: Int -> Int
+relief = (`div` 3)
 
 main :: IO ()
 main = do
   text <- readFile "input-11"
   let (monkeys, left) = Maybe.fromJust (Parsing.parse (newlineSeparated monkey) text)
   -- print (fmap operation monkeys)
-  print monkeys
+  print (head (items (head monkeys)))
