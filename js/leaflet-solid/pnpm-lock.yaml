@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  leaflet: ^1.9.3
   solid-js: ^1.6.10
   vite: ^4.1.1
   vite-plugin-solid: ^2.5.0
@@ -9,6 +10,7 @@ dependencies:
   solid-js: 1.6.10
 
 devDependencies:
+  leaflet: 1.9.3
   vite: 4.1.1
   vite-plugin-solid: 2.5.0_solid-js@1.6.10+vite@4.1.1
 
@@ -753,6 +755,10 @@ packages:
     resolution: {integrity: sha512-46Tk9JiOL2z7ytNQWFLpj99RZkVgeHf87yGQKsIkaPz1qSH9UczKH1rO7K3wgRselo0tYMUNfecYpm/p1vC7tQ==}
     engines: {node: '>=6'}
     hasBin: true
+    dev: true
+
+  /leaflet/1.9.3:
+    resolution: {integrity: sha512-iB2cR9vAkDOu5l3HAay2obcUHZ7xwUBBjph8+PGtmW/2lYhbLizWtG7nTeYht36WfOslixQF9D/uSIzhZgGMfQ==}
     dev: true
 
   /lru-cache/5.1.1:

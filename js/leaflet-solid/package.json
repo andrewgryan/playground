@@ -10,6 +10,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "leaflet": "^1.9.3",
     "vite": "^4.1.1",
     "vite-plugin-solid": "^2.5.0"
   },
