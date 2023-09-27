@@ -1,8 +1,11 @@
 format ELF64 executable
 
+SYS_write = 1
+SYS_exit = 60
+
 macro write fd, buf, count
 {
-    mov rax, 1
+    mov rax, SYS_write
     mov rdi, fd
     mov rsi, buf
     mov rdx, count
@@ -11,7 +14,7 @@ macro write fd, buf, count
 
 macro exit code
 {
-    mov rax, 60
+    mov rax, SYS_exit
     mov rdi, code
     syscall
 }
