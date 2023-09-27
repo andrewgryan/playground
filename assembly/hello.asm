@@ -9,14 +9,18 @@ macro write fd, buf, count
     syscall
 }
 
+macro exit code
+{
+    mov rax, 60
+    mov rdi, code
+    syscall
+}
+
 segment readable executable
 entry main
 main:
     write 1, msg, msg_len
-
-    mov rax, 60
-    mov rdi, 0
-    syscall
+    exit 0
 
 segment readable writeable
 msg db "Foo, Bar!", 10
