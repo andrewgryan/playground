@@ -85,6 +85,15 @@ macro close fd
     syscall1 SYS_close, fd
 }
 
+struc servaddr_in
+{
+    .sin_family dw 0
+    .sin_port dw 0
+    .sin_addr dd 0
+    .sin_zero dq 0
+    .size = $ - .sin_family
+}
+
 segment readable executable
 entry main
 main:
@@ -101,7 +110,7 @@ main:
     mov word [servaddr.sin_family], AF_INET
     mov dword [servaddr.sin_addr], INADDR_ANY
     mov word [servaddr.sin_port], PORT
-    bind [sockfd], servaddr.sin_family, sizeof_servaddr
+    bind [sockfd], servaddr.sin_family, servaddr.size
     cmp rax, 0
     jl error
 
@@ -125,11 +134,8 @@ error:
 ;; dq - 8 byte
 segment readable writeable
 sockfd dq 0
-servaddr.sin_family dw 0
-servaddr.sin_port dw 0
-servaddr.sin_addr dd 0
-servaddr.sin_zero dq 0
-sizeof_servaddr = $ - servaddr.sin_family
+servaddr servaddr_in
+cliaddr servaddr_in
 
 start db "INFO: Starting Web-site!", 10
 start_len = $ - start
