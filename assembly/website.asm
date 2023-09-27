@@ -4,17 +4,44 @@ SYS_write = 1
 SYS_exit = 60
 SYS_socket = 41
 SYS_bind = 49
+SYS_listen = 50
+SYS_close = 3
 
 AF_INET = 2
 SOCK_STREAM = 1
 INADDR_ANY = 0
 PORT = 14619 ;; 6969
+MAX_CONN = 5
 
 STDOUT = 1
 STDERR = 2
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
+
+macro syscall3 number, a, b, c
+{
+    mov rax, number
+    mov rdi, a
+    mov rsi, b
+    mov rdx, c
+    syscall
+}
+
+macro syscall2 number, a, b
+{
+    mov rax, number
+    mov rdi, a
+    mov rsi, b
+    syscall
+}
+
+macro syscall1 number, a
+{
+    mov rax, number
+    mov rdi, a
+    syscall
+}
 
 macro write fd, buf, count
 {
@@ -42,19 +69,20 @@ macro socket domain, type, protocol
     syscall
 }
 
-macro syscall3 number, a, b, c
-{
-    mov rax, number
-    mov rdi, a
-    mov rsi, b
-    mov rdx, c
-    syscall
-}
-
 ;; int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 macro bind sockfd, addr, addrlen
 {
     syscall3 SYS_bind, sockfd, addr, addrlen
+}
+
+macro listen sockfd, backlog
+{
+    syscall2 SYS_listen, sockfd, backlog
+}
+
+macro close fd
+{
+    syscall1 SYS_close, fd
 }
 
 segment readable executable
@@ -76,12 +104,19 @@ main:
     bind [sockfd], servaddr.sin_family, sizeof_servaddr
     cmp rax, 0
     jl error
-    write STDOUT, ok_msg, ok_msg_len
 
+    write STDOUT, listen_trace_msg, listen_trace_msg_len
+    listen [sockfd], MAX_CONN
+    cmp rax, 0
+    jl error
+
+    write STDOUT, ok_msg, ok_msg_len
+    close [sockfd]
     exit EXIT_SUCCESS
 
 error:
     write STDERR, error_msg, error_msg_len
+    close [sockfd]
     exit EXIT_FAILURE
 
 ;; db - 1 byte
@@ -104,6 +139,8 @@ socket_trace_msg db "INFO: Starting a socket...", 10
 socket_trace_msg_len = $ - socket_trace_msg
 bind_trace_msg db "INFO: Bind the socket...", 10
 bind_trace_msg_len = $ - bind_trace_msg
+listen_trace_msg db "INFO: Listening to socket...", 10
+listen_trace_msg_len = $ - listen_trace_msg
 ok_msg db "INFO: OK", 10
 ok_msg_len = $ - ok_msg
 
