@@ -3,6 +3,7 @@ format ELF64 executable
 SYS_write = 1
 SYS_exit = 60
 SYS_socket = 41
+SYS_accept = 43
 SYS_bind = 49
 SYS_listen = 50
 SYS_close = 3
@@ -80,6 +81,11 @@ macro listen sockfd, backlog
     syscall2 SYS_listen, sockfd, backlog
 }
 
+macro accept sockfd, addr, addrlen
+{
+    syscall3 SYS_accept, sockfd, addr, addrlen
+}
+
 macro close fd
 {
     syscall1 SYS_close, fd
@@ -91,7 +97,6 @@ struc servaddr_in
     .sin_port dw 0
     .sin_addr dd 0
     .sin_zero dq 0
-    .size = $ - .sin_family
 }
 
 segment readable executable
@@ -110,7 +115,7 @@ main:
     mov word [servaddr.sin_family], AF_INET
     mov dword [servaddr.sin_addr], INADDR_ANY
     mov word [servaddr.sin_port], PORT
-    bind [sockfd], servaddr.sin_family, servaddr.size
+    bind [sockfd], servaddr.sin_family, servaddr_size
     cmp rax, 0
     jl error
 
@@ -119,12 +124,25 @@ main:
     cmp rax, 0
     jl error
 
+next_request:
+    write STDOUT, accept_trace_msg, accept_trace_msg_len
+    accept [sockfd], cliaddr.sin_family, cliaddr_size
+    cmp rax, 0
+    jl error
+
+    mov qword [connfd], rax
+    write [connfd], response, response_len
+    close [connfd]
+    jmp next_request
+
     write STDOUT, ok_msg, ok_msg_len
+    close [connfd]
     close [sockfd]
     exit EXIT_SUCCESS
 
 error:
     write STDERR, error_msg, error_msg_len
+    close [connfd]
     close [sockfd]
     exit EXIT_FAILURE
 
@@ -133,9 +151,14 @@ error:
 ;; dd - 4 byte
 ;; dq - 8 byte
 segment readable writeable
-sockfd dq 0
+sockfd dq -1
+connfd dq -1
+
 servaddr servaddr_in
+servaddr_size = $ - servaddr.sin_family
+
 cliaddr servaddr_in
+cliaddr_size dd servaddr_size
 
 start db "INFO: Starting Web-site!", 10
 start_len = $ - start
@@ -147,9 +170,21 @@ bind_trace_msg db "INFO: Bind the socket...", 10
 bind_trace_msg_len = $ - bind_trace_msg
 listen_trace_msg db "INFO: Listening to socket...", 10
 listen_trace_msg_len = $ - listen_trace_msg
+accept_trace_msg db "INFO: Waiting for client connections...", 10
+accept_trace_msg_len = $ - accept_trace_msg
 ok_msg db "INFO: OK", 10
 ok_msg_len = $ - ok_msg
 
+hello db "Hello, from fast assembler!", 10
+hello_len = $ - hello
+
+response db "HTTP/1.1 200 OK", 13, 10
+         db "Content-Type: text/html; charset=utf-8"
+         db "Connection: close", 13, 10
+         db 13, 10
+         db "<h1>Hello, from fast assembler</h1>", 10
+response_len = $ - response
+ 
 ;; struct sockaddr_in {
 ;;     family 16 bits
 ;;     port   16 bits
