@@ -179,7 +179,7 @@ hello db "Hello, from fast assembler!", 10
 hello_len = $ - hello
 
 response db "HTTP/1.1 200 OK", 13, 10
-         db "Content-Type: text/html; charset=utf-8"
+         db "Content-Type: text/html; charset=utf-8", 13, 10
          db "Connection: close", 13, 10
          db 13, 10
          db "<h1>Hello, from fast assembler</h1>", 10
