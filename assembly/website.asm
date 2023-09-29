@@ -1,5 +1,6 @@
 format ELF64 executable
 
+SYS_read = 0
 SYS_write = 1
 SYS_exit = 60
 SYS_socket = 41
@@ -19,6 +20,8 @@ STDERR = 2
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
+
+REQUEST_CAP = 128*1024
 
 macro syscall3 number, a, b, c
 {
@@ -47,6 +50,11 @@ macro syscall1 number, a
 macro write fd, buf, count
 {
     syscall3 SYS_write, fd, buf, count
+}
+
+macro read fd, buf, count
+{
+    syscall3 SYS_read, fd, buf, count
 }
 
 macro exit code
@@ -126,9 +134,19 @@ next_request:
     cmp rax, 0
     jl error
 
-    ;; TODO parse request header
-
+    ;; Store connection file descriptor
     mov qword [connfd], rax
+
+    ;; TODO parse request header
+    read [connfd], request, REQUEST_CAP
+    cmp rax, 0
+    jl error
+
+    mov [request_len], rax
+    mov [request_cur], request
+    write STDOUT, [request_cur], [request_len]
+
+    ;; Send HTTP response
     write [connfd], response, response_len
     close [connfd]
     jmp next_request
@@ -176,6 +194,12 @@ ok_msg_len = $ - ok_msg
 hello db "Hello, from fast assembler!", 10
 hello_len = $ - hello
 
+;; Storage for request
+request_len rq 1
+request_cur rq 1
+request rb REQUEST_CAP
+
+;; GET /
 response db "HTTP/1.1 200 OK", 13, 10
          db "Content-Type: text/html; charset=utf-8", 13, 10
          db "Connection: close", 13, 10
