@@ -46,11 +46,7 @@ macro syscall1 number, a
 
 macro write fd, buf, count
 {
-    mov rax, SYS_write
-    mov rdi, fd
-    mov rsi, buf
-    mov rdx, count
-    syscall
+    syscall3 SYS_write, fd, buf, count
 }
 
 macro exit code
@@ -129,6 +125,8 @@ next_request:
     accept [sockfd], cliaddr.sin_family, cliaddr_size
     cmp rax, 0
     jl error
+
+    ;; TODO parse request header
 
     mov qword [connfd], rax
     write [connfd], response, response_len
