@@ -183,6 +183,7 @@ response db "HTTP/1.1 200 OK", 13, 10
          db "Connection: close", 13, 10
          db 13, 10
          db "<h1>Hello, from fast assembler</h1>", 10
+         db "<form action='/' method='post'><button type='submit'>Submit</button></form>", 10
 response_len = $ - response
  
 ;; struct sockaddr_in {
