@@ -1,5 +1,6 @@
 format ELF64 executable
 
+;; System call x86_64 codes
 SYS_read = 0
 SYS_write = 1
 SYS_exit = 60
@@ -9,18 +10,22 @@ SYS_bind = 49
 SYS_listen = 50
 SYS_close = 3
 
+;; Socket programming
 AF_INET = 2
 SOCK_STREAM = 1
 INADDR_ANY = 0
 PORT = 14619 ;; 6969
 MAX_CONN = 5
 
+;; I/O
 STDOUT = 1
 STDERR = 2
 
+;; Program return code
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
+;; HTTP Message buffer size
 REQUEST_CAP = 128*1024
 
 macro syscall3 number, a, b, c
@@ -146,8 +151,10 @@ next_request:
     mov [request_cur], request
     write STDOUT, [request_cur], [request_len]
 
+    call handle_request
+
     ;; Send HTTP response
-    write [connfd], response, response_len
+    write [connfd], [response_cur], [response_len]
     close [connfd]
     jmp next_request
 
@@ -161,6 +168,13 @@ error:
     close [connfd]
     close [sockfd]
     exit EXIT_FAILURE
+
+
+handle_request:
+    ;; Write page to response memory
+    mov [response_len], alternative_len
+    mov [response_cur], alternative
+    ret
 
 ;; db - 1 byte
 ;; dw - 2 byte
@@ -191,6 +205,7 @@ accept_trace_msg_len = $ - accept_trace_msg
 ok_msg db "INFO: OK", 10
 ok_msg_len = $ - ok_msg
 
+;; Hello, World message
 hello db "Hello, from fast assembler!", 10
 hello_len = $ - hello
 
@@ -199,14 +214,27 @@ request_len rq 1
 request_cur rq 1
 request rb REQUEST_CAP
 
+response_len rq 1
+response_cur rq 1
+response rb REQUEST_CAP
+
 ;; GET /
-response db "HTTP/1.1 200 OK", 13, 10
+form db "HTTP/1.1 200 OK", 13, 10
          db "Content-Type: text/html; charset=utf-8", 13, 10
          db "Connection: close", 13, 10
          db 13, 10
          db "<h1>Hello, from fast assembler</h1>", 10
          db "<form action='/' method='post'><button type='submit'>Submit</button></form>", 10
-response_len = $ - response
+form_len = $ - form
+
+;; Alternative response
+alternative db "HTTP/1.1 200 OK", 13, 10
+         db "Content-Type: text/html; charset=utf-8", 13, 10
+         db "Connection: close", 13, 10
+         db 13, 10
+         db "<h1>Alternative</h1>", 10
+alternative_len = $ - alternative
+
  
 ;; struct sockaddr_in {
 ;;     family 16 bits
