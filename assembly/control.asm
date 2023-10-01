@@ -10,7 +10,7 @@ entry main
 main:
     ;; Raw asm
     mov [buf], 0x21
-    mov [buf+1], 0x21
+    mov [buf+1], 0x0a
 
     write STDOUT, buf, 2
     
