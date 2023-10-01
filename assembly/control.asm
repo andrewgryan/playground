@@ -9,7 +9,11 @@ segment readable executable
 entry main
 main:
     write STDOUT, msg, msg_len
-    exit SUCCESS
+    ;; Raw asm
+    xor rax, rax
+    mov rbx, 42
+    
+    exit rbx
 
 segment readable writeable
 msg db "Hello, World!", 10
