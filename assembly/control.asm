@@ -12,6 +12,12 @@ main:
     mov rdi, msg
     call strlen
     mov rdx, rax
+
+    ;; Reverse string
+    mov rdi, msg
+    call reverse
+
+    ;; Write result
     write STDOUT, msg, rdx
     
     exit SUCCESS
@@ -36,6 +42,24 @@ strlen:
     mov rax, rdi
     ret
 
+;; Reverse
+reverse:
+    ;; Save argument registers
+    push rdi
+    xor rax, rax
+
+    ;; Swap first two chars
+    mov rsi, rdi
+    inc rsi
+    mov al, byte [rdi]
+    mov bl, byte [rsi]
+    mov byte [rsi], al
+    mov byte [rdi], bl
+
+    ;; Remove data from stack
+    pop rdi
+    
+    ret
 
 segment readable writeable
 
