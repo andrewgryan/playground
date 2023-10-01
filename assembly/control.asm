@@ -10,14 +10,15 @@ entry main
 main:
     ;; Raw asm
     mov [buf], 0x21
+    mov [buf+1], 0x21
 
-    write STDOUT, buf, 1
+    write STDOUT, buf, 2
     
     exit SUCCESS
 
 segment readable writeable
 
-buf rb 1
+buf rb 2
 
 msg db "Hello, World!", 10
 msg_len = $ - msg
