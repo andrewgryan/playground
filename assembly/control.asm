@@ -26,24 +26,21 @@ main:
     ;; Write result
     write STDOUT, msg, rdx
 
-    ;; startswith "GET "
+    ;; rdi register should not change between calls
     mov rdi, http_message
-    mov rsi, http_get
-    call startswith
+
+    ;; startswith "GET "
+    call is_get
     cmp rax, 0
     je get
 
     ;; startswith "POST "
-    mov rdi, http_message
-    mov rsi, http_post
-    call startswith
+    call is_post
     cmp rax, 0
     je post
 
     ;; startswith "DELETE "
-    mov rdi, http_message
-    mov rsi, http_delete
-    call startswith
+    call is_delete
     cmp rax, 0
     je delete
 
@@ -67,6 +64,24 @@ error:
     write STDOUT, error_msg, error_msg_len
     exit FAILURE
 
+
+;; Check HTTP method is GET
+is_get:
+    mov rsi, http_get
+    call startswith
+    ret
+
+;; Check HTTP method is POST
+is_post:
+    mov rsi, http_post
+    call startswith
+    ret
+
+;; Check HTTP method is DELETE
+is_delete:
+    mov rsi, http_delete
+    call startswith
+    ret
 
 ;; Check NULL-terminated string starts with NULL-terminated string
 ;;
