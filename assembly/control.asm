@@ -89,15 +89,15 @@ startswith:
     inc rdi
     inc rsi
 
-    ;; Loop while bytes compare successfully
+    ;; Loop while bytes equal
     jmp .step
 
 .fail:
-    mov rax, 1
+    mov rax, 1  ;; False
     jmp .done
 
 .succeed:
-    mov rax, 0
+    mov rax, 0  ;; True
     jmp .done
 
 .done:
