@@ -27,8 +27,10 @@ struc servaddr_in
 segment readable executable
 entry main
 main:
+    ;; Greeting
     write STDOUT, start, start_len
 
+    ;; Create a socket
     write STDOUT, socket_trace_msg, socket_trace_msg_len
     socket AF_INET, SOCK_STREAM, 0
     cmp rax, 0
@@ -36,6 +38,7 @@ main:
     mov qword [sockfd], rax
     write STDOUT, ok_msg, ok_msg_len
 
+    ;; Bind socket on port
     write STDOUT, bind_trace_msg, bind_trace_msg_len
     mov word [servaddr.sin_family], AF_INET
     mov dword [servaddr.sin_addr], INADDR_ANY
@@ -44,12 +47,14 @@ main:
     cmp rax, 0
     jl error
 
+    ;; Listen to HTTP connections
     write STDOUT, listen_trace_msg, listen_trace_msg_len
     listen [sockfd], MAX_CONN
     cmp rax, 0
     jl error
 
 next_request:
+    ;; Accept a request (blocking I/O)
     write STDOUT, accept_trace_msg, accept_trace_msg_len
     accept [sockfd], cliaddr.sin_family, cliaddr_size
     cmp rax, 0
@@ -63,15 +68,19 @@ next_request:
     cmp rax, 0
     jl error
 
+    ;; Echo HTTP request to STDOUT
     mov [request_len], rax
     mov [request_cur], request
     write STDOUT, [request_cur], [request_len]
 
+    ;; Handle HTTP request
     call handle_request
 
     ;; Send HTTP response
     write [connfd], [response_cur], [response_len]
     close [connfd]
+
+    ;; Loop
     jmp next_request
 
     write STDOUT, ok_msg, ok_msg_len
@@ -87,6 +96,7 @@ error:
 
 
 handle_request:
+    ;; TODO implement branching logic and response
     write [connfd], form, form_len
     ret
 
