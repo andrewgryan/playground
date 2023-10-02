@@ -85,10 +85,9 @@ is_delete:
 
 ;; Check NULL-terminated string starts with NULL-terminated string
 ;;
-;; rdi - void *text
-;; rsi - void *text
-;;
-;; returns rax
+;; @param {void *text} - rdi
+;; @param {void *text} - rsi
+;; @returns {bool} - rax
 startswith:
     xor rax, rax  ;; Zero rax register
     xor rbx, rbx  ;; Zero rbx register
@@ -128,6 +127,10 @@ startswith:
     pop rdi
     ret
 
+;; Calculate the length of a NULL-terminated string
+;; 
+;; @param {void *text} - rdi
+;; @returns {int} - rax
 strlen:
     ;; push registers
     push rdi
