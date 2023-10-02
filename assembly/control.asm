@@ -18,6 +18,10 @@ main:
     mov rsi, rdx
     call reverse
 
+    ;; Reverse twice
+    mov rdi, msg
+    call reverse
+
     ;; Write result
     write STDOUT, msg, rdx
     
