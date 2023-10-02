@@ -67,8 +67,16 @@ error:
     write STDOUT, error_msg, error_msg_len
     exit FAILURE
 
+
+;; Check NULL-terminated string starts with NULL-terminated string
+;;
+;; rdi - void *text
+;; rsi - void *text
+;;
+;; returns rax
 startswith:
     xor rax, rax  ;; Zero rax register
+    xor rbx, rbx  ;; Zero rbx register
     push rdi
     push rsi
 
