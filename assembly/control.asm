@@ -15,6 +15,7 @@ main:
 
     ;; Reverse string
     mov rdi, msg
+    mov rsi, rdx
     call reverse
 
     ;; Write result
@@ -46,17 +47,66 @@ strlen:
 reverse:
     ;; Save argument registers
     push rdi
+    push rsi
     xor rax, rax
 
-    ;; Swap first two chars
-    mov rsi, rdi
-    inc rsi
+    ;; Correct for newline and 0-index
+    dec rsi
+    dec rsi
+
+    ;; Swap two chars
     mov al, byte [rdi]
-    mov bl, byte [rsi]
-    mov byte [rsi], al
+    mov bl, byte [rdi + rsi]
+    mov byte [rdi + rsi], al
+    mov byte [rdi], bl
+
+    ;; Swap two chars
+    inc rdi
+    dec rsi
+    dec rsi
+    mov al, byte [rdi]
+    mov bl, byte [rdi + rsi]
+    mov byte [rdi + rsi], al
+    mov byte [rdi], bl
+
+    ;; Swap two chars
+    inc rdi
+    dec rsi
+    dec rsi
+    mov al, byte [rdi]
+    mov bl, byte [rdi + rsi]
+    mov byte [rdi + rsi], al
+    mov byte [rdi], bl
+
+    ;; Swap two chars
+    inc rdi
+    dec rsi
+    dec rsi
+    mov al, byte [rdi]
+    mov bl, byte [rdi + rsi]
+    mov byte [rdi + rsi], al
+    mov byte [rdi], bl
+
+    ;; Swap two chars
+    inc rdi
+    dec rsi
+    dec rsi
+    mov al, byte [rdi]
+    mov bl, byte [rdi + rsi]
+    mov byte [rdi + rsi], al
+    mov byte [rdi], bl
+
+    ;; Swap two chars
+    inc rdi
+    dec rsi
+    dec rsi
+    mov al, byte [rdi]
+    mov bl, byte [rdi + rsi]
+    mov byte [rdi + rsi], al
     mov byte [rdi], bl
 
     ;; Remove data from stack
+    pop rsi
     pop rdi
     
     ret
