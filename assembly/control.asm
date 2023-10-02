@@ -3,7 +3,8 @@ format ELF64 executable
 include "x86_64.inc"
 
 ;; Experiment with control flow
-SUCCESS = 0
+SUCCESS equ 0
+FAILURE equ 1
 
 segment readable executable
 entry main
@@ -31,7 +32,14 @@ main:
     call startswith
     cmp rax, 0
     je get
-    jmp post
+
+    mov rdi, http_message
+    mov rsi, http_post
+    call startswith
+    cmp rax, 0
+    je post
+
+    jmp error
     
     exit SUCCESS
 
@@ -42,6 +50,10 @@ get:
 post:
     write STDOUT, post_msg, post_msg_len
     exit SUCCESS
+
+error:
+    write STDOUT, error_msg, error_msg_len
+    exit FAILURE
 
 startswith:
     xor rax, rax
@@ -120,7 +132,10 @@ get_msg db "GET detected!", 10, 0
 get_msg_len = $ - get_msg
 post_msg db "POST detected!", 10, 0
 post_msg_len = $ - post_msg
+error_msg db "Error detected!", 10, 0
+error_msg_len = $ - error_msg
 
 ;; Example HTTP message
 http_message db "POST /favicon.ico", 10, 0
 http_get db "GET ", 0
+http_post db "POST ", 0
