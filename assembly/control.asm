@@ -32,37 +32,45 @@ main:
     ;; startswith "GET "
     call is_get
     cmp rax, 0
-    je get
+    je .get
 
     ;; startswith "POST "
     call is_post
     cmp rax, 0
-    je post
+    je .post
 
     ;; startswith "DELETE "
     call is_delete
     cmp rax, 0
-    je delete
+    je .delete
 
-    jmp error
+    ;; Fell off end of check blocks
+    jmp .error
     
+.success:
+    write STDOUT, ok_msg, ok_msg_len
     exit SUCCESS
 
-get:
-    write STDOUT, get_msg, get_msg_len
-    exit SUCCESS
-
-post:
-    write STDOUT, post_msg, post_msg_len
-    exit SUCCESS
-
-delete:
-    write STDOUT, delete_msg, delete_msg_len
-    exit SUCCESS
-
-error:
+.error:
     write STDOUT, error_msg, error_msg_len
     exit FAILURE
+
+
+;; Handle GET request
+.get:
+    write STDOUT, get_msg, get_msg_len
+    jmp .success
+
+;; Handle POST request
+.post:
+    write STDOUT, post_msg, post_msg_len
+    jmp .success
+
+;; Handle DELETE request
+.delete:
+    write STDOUT, delete_msg, delete_msg_len
+    jmp .success
+
 
 
 ;; Check HTTP method is GET
@@ -200,8 +208,12 @@ post_msg db "POST detected!", 10, 0
 post_msg_len = $ - post_msg
 delete_msg db "DELETE detected!", 10, 0
 delete_msg_len = $ - delete_msg
+
+
 error_msg db "Error detected!", 10, 0
 error_msg_len = $ - error_msg
+ok_msg db "OK", 10, 0
+ok_msg_len = $ - ok_msg
 
 ;; Example HTTP message
 http_message db "DELETE /favicon.ico", 10, 0
