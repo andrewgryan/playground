@@ -60,51 +60,22 @@ reverse:
     mov byte [rdi + rsi], al
     mov byte [rdi], bl
 
+.next:
     ;; Swap two chars
     inc rdi
     dec rsi
     dec rsi
+
+    cmp rsi, 0
+    jle .done
+
     mov al, byte [rdi]
     mov bl, byte [rdi + rsi]
     mov byte [rdi + rsi], al
     mov byte [rdi], bl
+    jmp .next
 
-    ;; Swap two chars
-    inc rdi
-    dec rsi
-    dec rsi
-    mov al, byte [rdi]
-    mov bl, byte [rdi + rsi]
-    mov byte [rdi + rsi], al
-    mov byte [rdi], bl
-
-    ;; Swap two chars
-    inc rdi
-    dec rsi
-    dec rsi
-    mov al, byte [rdi]
-    mov bl, byte [rdi + rsi]
-    mov byte [rdi + rsi], al
-    mov byte [rdi], bl
-
-    ;; Swap two chars
-    inc rdi
-    dec rsi
-    dec rsi
-    mov al, byte [rdi]
-    mov bl, byte [rdi + rsi]
-    mov byte [rdi + rsi], al
-    mov byte [rdi], bl
-
-    ;; Swap two chars
-    inc rdi
-    dec rsi
-    dec rsi
-    mov al, byte [rdi]
-    mov bl, byte [rdi + rsi]
-    mov byte [rdi + rsi], al
-    mov byte [rdi], bl
-
+.done:
     ;; Remove data from stack
     pop rsi
     pop rdi
@@ -113,5 +84,5 @@ reverse:
 
 segment readable writeable
 
-msg db "Hello, World!", 10, 0
+msg db "Hello, World! This is a longer sentence.", 10, 0
 msg_len = $ - msg
