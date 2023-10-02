@@ -51,8 +51,7 @@ reverse:
     xor rax, rax
 
     ;; Correct for newline and 0-index
-    dec rsi
-    dec rsi
+    sub rsi, 2
 
     ;; Swap two chars
     mov al, byte [rdi]
@@ -63,8 +62,7 @@ reverse:
 .next:
     ;; Swap two chars
     inc rdi
-    dec rsi
-    dec rsi
+    sub rsi, 2
 
     cmp rsi, 0
     jle .done
