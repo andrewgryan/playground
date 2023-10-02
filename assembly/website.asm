@@ -1,14 +1,6 @@
 format ELF64 executable
 
-;; System call x86_64 codes
-SYS_read = 0
-SYS_write = 1
-SYS_exit = 60
-SYS_socket = 41
-SYS_accept = 43
-SYS_bind = 49
-SYS_listen = 50
-SYS_close = 3
+include "x86_64.inc"
 
 ;; Socket programming
 AF_INET = 2
@@ -17,10 +9,6 @@ INADDR_ANY = 0
 PORT = 14619 ;; 6969
 MAX_CONN = 5
 
-;; I/O
-STDOUT = 1
-STDERR = 2
-
 ;; Program return code
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
@@ -28,46 +16,6 @@ EXIT_FAILURE = 1
 ;; HTTP Message buffer size
 REQUEST_CAP = 128*1024
 
-macro syscall3 number, a, b, c
-{
-    mov rax, number
-    mov rdi, a
-    mov rsi, b
-    mov rdx, c
-    syscall
-}
-
-macro syscall2 number, a, b
-{
-    mov rax, number
-    mov rdi, a
-    mov rsi, b
-    syscall
-}
-
-macro syscall1 number, a
-{
-    mov rax, number
-    mov rdi, a
-    syscall
-}
-
-macro write fd, buf, count
-{
-    syscall3 SYS_write, fd, buf, count
-}
-
-macro read fd, buf, count
-{
-    syscall3 SYS_read, fd, buf, count
-}
-
-macro exit code
-{
-    mov rax, SYS_exit
-    mov rdi, code
-    syscall
-}
 
 ;; int socket(int domain, int type, int protocol);
 macro socket domain, type, protocol
@@ -171,9 +119,7 @@ error:
 
 
 handle_request:
-    ;; Write page to response memory
-    mov [response_len], alternative_len
-    mov [response_cur], alternative
+    write [connfd], form, form_len
     ret
 
 ;; db - 1 byte
@@ -220,20 +166,12 @@ response rb REQUEST_CAP
 
 ;; GET /
 form db "HTTP/1.1 200 OK", 13, 10
-         db "Content-Type: text/html; charset=utf-8", 13, 10
-         db "Connection: close", 13, 10
-         db 13, 10
-         db "<h1>Hello, from fast assembler</h1>", 10
-         db "<form action='/' method='post'><button type='submit'>Submit</button></form>", 10
+     db "Content-Type: text/html; charset=utf-8", 13, 10
+     db "Connection: close", 13, 10
+     db 13, 10
+     db "<h1>Hello, from fast assembler</h1>", 10
+     db "<form action='/' method='post'><button type='submit'>Submit</button></form>", 10
 form_len = $ - form
-
-;; Alternative response
-alternative db "HTTP/1.1 200 OK", 13, 10
-         db "Content-Type: text/html; charset=utf-8", 13, 10
-         db "Connection: close", 13, 10
-         db 13, 10
-         db "<h1>Alternative</h1>", 10
-alternative_len = $ - alternative
 
  
 ;; struct sockaddr_in {
