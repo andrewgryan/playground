@@ -24,8 +24,34 @@ main:
 
     ;; Write result
     write STDOUT, msg, rdx
+
+    ;; startswith "GET "
+    mov rdi, http_message
+    mov rsi, http_get
+    call startswith
+    cmp rax, 0
+    je get
+    jmp post
     
     exit SUCCESS
+
+get:
+    write STDOUT, get_msg, get_msg_len
+    exit SUCCESS
+
+post:
+    write STDOUT, post_msg, post_msg_len
+    exit SUCCESS
+
+startswith:
+    xor rax, rax
+
+    ;; Algorithm
+    mov al, byte [rdi]
+    mov bl, byte [rsi]
+
+    sub al, bl  ;; updates lower part of rax register
+    ret
 
 strlen:
     ;; push registers
@@ -84,7 +110,17 @@ reverse:
     
     ret
 
+
 segment readable writeable
 
 msg db "Hello, World! This is a longer sentence.", 10, 0
 msg_len = $ - msg
+
+get_msg db "GET detected!", 10, 0
+get_msg_len = $ - get_msg
+post_msg db "POST detected!", 10, 0
+post_msg_len = $ - post_msg
+
+;; Example HTTP message
+http_message db "POST /favicon.ico", 10, 0
+http_get db "GET ", 0
