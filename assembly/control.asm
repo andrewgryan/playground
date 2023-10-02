@@ -9,67 +9,52 @@ FAILURE equ 1
 segment readable executable
 entry main
 main:
-    ;; calculate string length dynamically
-    mov rdi, msg
-    call strlen
-    mov rdx, rax
-
-    ;; Reverse string
-    mov rdi, msg
-    mov rsi, rdx
-    call reverse
-
-    ;; Reverse twice
-    mov rdi, msg
-    call reverse
-
-    ;; Write result
-    write STDOUT, msg, rdx
-
     ;; rdi register should not change between calls
     mov rdi, http_message
 
     ;; startswith "GET "
     call is_get
     cmp rax, 0
-    je .get
+    je get
 
     ;; startswith "POST "
     call is_post
     cmp rax, 0
-    je .post
+    je post
 
     ;; startswith "DELETE "
     call is_delete
     cmp rax, 0
-    je .delete
+    je delete
 
     ;; Fell off end of check blocks
-    jmp .error
-    
-.success:
+    call error
+
+
+;; Success/Error handlers
+success:
     write STDOUT, ok_msg, ok_msg_len
     exit SUCCESS
 
-.error:
+error:
     write STDOUT, error_msg, error_msg_len
     exit FAILURE
 
 
 ;; Handle GET request
-.get:
+get:
     write STDOUT, get_msg, get_msg_len
-    jmp .success
+    call success
 
 ;; Handle POST request
-.post:
+post:
     write STDOUT, post_msg, post_msg_len
-    jmp .success
+    call success
 
 ;; Handle DELETE request
-.delete:
+delete:
     write STDOUT, delete_msg, delete_msg_len
-    jmp .success
+    call success
 
 
 
