@@ -5,7 +5,8 @@ include "x86_64.inc"
 include "socket.inc"
 
 ;; Socket programming
-PORT = 14619 ;; 6969
+;; PORT = 14619 ;; 6969 -> hex -. big endian -> decimal
+PORT = 36895 ;; 8080
 MAX_CONN = 5
 
 ;; Program return code
