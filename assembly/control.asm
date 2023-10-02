@@ -29,7 +29,6 @@ main:
     ;; startswith "GET "
     mov rdi, http_message
     mov rsi, http_get
-    mov rdx, http_get_len
     call startswith
     cmp rax, 0
     je get
@@ -37,7 +36,6 @@ main:
     ;; startswith "POST "
     mov rdi, http_message
     mov rsi, http_post
-    mov rdx, http_post_len
     call startswith
     cmp rax, 0
     je post
@@ -45,7 +43,6 @@ main:
     ;; startswith "DELETE "
     mov rdi, http_message
     mov rsi, http_delete
-    mov rdx, http_delete_len
     call startswith
     cmp rax, 0
     je delete
@@ -72,12 +69,10 @@ error:
 
 startswith:
     xor rax, rax  ;; Zero rax register
+    push rdi
+    push rsi
 
 .step:
-    ;; Check there are bytes left to process
-    cmp rdx, 0
-    je .succeed
-
     ;; Load next pair of bytes
     mov al, byte [rdi]
     mov bl, byte [rsi]
@@ -93,17 +88,21 @@ startswith:
     ;; Update indices
     inc rdi
     inc rsi
-    dec rdx
 
     ;; Loop while bytes compare successfully
     jmp .step
 
 .fail:
     mov rax, 1
-    ret
+    jmp .done
 
 .succeed:
     mov rax, 0
+    jmp .done
+
+.done:
+    pop rsi
+    pop rdi
     ret
 
 strlen:
