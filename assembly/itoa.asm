@@ -24,7 +24,7 @@ entry main
 main:
     ;; Convert number to ASCII
     mov rdi, buf
-    mov rsi, qword 8080
+    mov rsi, qword 1234567890
     call itoa
     
     ;; Print buffer
@@ -79,4 +79,4 @@ itoa:
 
 ;; DATA
 segment readable writable
-buf rb 10
+buf rb 11
