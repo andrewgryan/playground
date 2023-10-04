@@ -17,15 +17,20 @@ macro write fd, buf, buf_len {
     syscall
 }
 
+macro funcall2 func, a, b {
+    mov rdi, a
+    mov rsi, b
+    call func
+}
+
 ;; MAIN
 segment readable executable
 entry main
 
+
 main:
     ;; Convert number to ASCII
-    mov rdi, buf
-    mov rsi, qword 1234567890
-    call itoa
+    funcall2 itoa, buf, digits
     
     ;; Print buffer
     write STDOUT, buf, 20
@@ -80,3 +85,4 @@ itoa:
 ;; DATA
 segment readable writable
 buf rb 20
+digits = 1234567890
