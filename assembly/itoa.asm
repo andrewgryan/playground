@@ -45,13 +45,15 @@ itoa:
     xor r8, r8
     xor r10, r10
 
+    ;; Divisor is always 10 in this routine
+    mov ecx, 0x0a
+
     ;; Detect number of chars
     mov eax, esi ;; Copy number into division register
 .count_digits:
     inc r8 ;; increment digit counter
     xor edx, edx ;; clear dividend register
-    mov ecx, 0x0a ;; divisor
-    div ecx ;; perform unsigned division
+    div ecx ;; perform unsigned division by 10
 
     cmp eax, 0 ;; check division non-zero 
     jnz .count_digits
@@ -68,8 +70,7 @@ itoa:
 
     ;; Divide number by 10
     xor edx, edx ;; clear dividend register
-    mov ecx, 0x0a ;; divisor
-    div ecx ;; perform unsigned division
+    div ecx ;; perform unsigned division by 10
 
     ;; Write ASCII character to buffer
     mov r10d, eax ;; Save division
