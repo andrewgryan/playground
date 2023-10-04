@@ -17,7 +17,7 @@ macro write fd, buf, buf_len {
     syscall
 }
 
-macro funcall2 func, a, b {
+macro fn2 func, a, b {
     mov rdi, a
     mov rsi, b
     call func
@@ -30,7 +30,7 @@ entry main
 
 main:
     ;; Convert number to ASCII
-    funcall2 itoa, buf, digits
+    fn2 itoa, buf, digits
     
     ;; Print buffer
     write STDOUT, buf, 20
