@@ -24,7 +24,7 @@ entry main
 main:
     ;; Convert number to ASCII
     mov rdi, buf
-    mov sil, 42
+    mov rsi, qword 8080
     call itoa
     
     ;; Print buffer
@@ -38,24 +38,29 @@ main:
 itoa:
 
     ;; TODO calculate length of buffer taken up by number
-    xor r10, r10
+    xor r8, r8
 
     ;; Division
+    xor eax, eax ;; clear dividend
     xor edx, edx ;; clear dividend
     mov eax, esi ;; dividend
+
+.loop:
+    inc r8 ;; increment digit counter
+    xor edx, edx ;; clear dividend
     mov ecx, 0x0a ;; divisor
     div ecx ;; perform unsigned division
+
+    cmp eax, 0 ;; check division non-zero 
+    jnz .loop
     
 
     ;; TODO fill buffer with ASCII characters
 
 
-    add eax, 48  ;; convert digit to ASCII
-    add edx, 48  ;; convert digit to ASCII
-    mov byte [rdi], al
-
-    inc rdi
-    mov byte [rdi], dl
+    ;; Print loop counter
+    add r8b, 48  ;; convert digit to ASCII
+    mov byte [rdi], r8b
 
     ;; NULL terminate
     inc rdi
