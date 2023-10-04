@@ -36,53 +36,44 @@ main:
 ;; rdi - text buffer
 ;; rsi - number to convert
 itoa:
-
-    ;; TODO calculate length of buffer taken up by number
+    ;; Clear additional registers
     xor r8, r8
+    xor r10, r10
 
     ;; Detect number of chars
-    xor edx, edx ;; clear dividend
-    mov eax, esi ;; dividend
-
-.loop:
+    mov eax, esi ;; Copy number into division register
+.count_digits:
     inc r8 ;; increment digit counter
-    xor edx, edx ;; clear dividend
+    xor edx, edx ;; clear dividend register
     mov ecx, 0x0a ;; divisor
     div ecx ;; perform unsigned division
 
     cmp eax, 0 ;; check division non-zero 
-    jnz .loop
+    jnz .count_digits
     
-
     ;; Fill buffer with ASCII characters
-    xor edx, edx ;; clear dividend
-    mov eax, esi ;; dividend
+    mov eax, esi ;; Copy number into division register
 
-    ;; NULL terminate
-    inc r8
-    mov byte [rdi + r8], 0
+    ;; NULL terminate buffer
+    inc r8 ;; one position past digits
+    mov byte [rdi + r8], 0 ;; NULL character
 
-    ;; Reset digit counter
-    xor r9, r9
-    xor r10, r10
-.fill:
+.write_digits:
     dec r8 ;; decrement digit counter
 
     ;; Divide number by 10
-    xor edx, edx ;; clear dividend
+    xor edx, edx ;; clear dividend register
     mov ecx, 0x0a ;; divisor
     div ecx ;; perform unsigned division
 
     ;; Write ASCII character to buffer
-    mov r9d, eax ;; Save division
-    mov r10d, edx ;; Save remainder
-    add r10d, 48 ;; convert remainder to ASCII
-    mov byte [rdi+r8], r10b ;; place digit in buffer
+    mov r10d, eax ;; Save division
+    add edx, 48 ;; convert remainder to ASCII
+    mov byte [rdi+r8], dl ;; place digit in buffer
 
-    ;; Loop condition
-    cmp r9d, 0 ;; check division non-zero 
-    jnz .fill
-
+    ;; Check eax value from div
+    cmp r10d, 0 ;; check division non-zero 
+    jnz .write_digits
 
     ret
 
