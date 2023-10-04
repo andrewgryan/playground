@@ -28,7 +28,7 @@ main:
     call itoa
     
     ;; Print buffer
-    write STDOUT, buf, 10
+    write STDOUT, buf, 20
     exit 0
 
 ;; itoa integer to ascii representation
@@ -79,4 +79,4 @@ itoa:
 
 ;; DATA
 segment readable writable
-buf rb 11
+buf rb 20
