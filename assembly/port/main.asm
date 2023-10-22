@@ -12,6 +12,21 @@ CARRIAGE_RETURN = 10
 segment readable executable
 entry main
 main:
+   ;; Command line parsing
+   pop r8  ;; Number of arguments
+   cmp r8, 2
+   jne .usage
+
+   ;; Program name
+   pop rsi
+
+   ;; Parse first positional argument
+   pop r9
+   mov rdi, r9
+   call strlen
+   mov r10, rax
+   print r9, r10
+
    ;; Big-endian number
    mov rdi, 8080
    call endian
@@ -23,10 +38,32 @@ main:
    fn append, buf, CARRIAGE_RETURN
    
    ;; Print buffer
-   print buf, len
+   ;; print buf, len
 
    ;; Exit with return code
    exit 0
+
+.usage:
+   print usage_msg, usage_msg_len
+   exit 1
+
+;; Null-terminated string length
+strlen:
+    xor rax, rax
+
+.loop:
+    mov byte dl, [rdi]
+    cmp dl, 0
+    je .done
+
+    ;; Increment counter
+    inc rax
+    inc rdi
+    jmp .loop
+
+.done:
+    ret
+
    
 ;; Append
 ;; Scan string for 0, replace with char and append 0
@@ -70,3 +107,7 @@ endian:
 segment readable writable
 buf db "      ", CARRIAGE_RETURN
 len = $ - buf
+
+;; Error message
+usage_msg db "Usage: ./main [port]", 10
+usage_msg_len = $ - usage_msg
