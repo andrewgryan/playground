@@ -25,20 +25,24 @@ main:
    mov rdi, r9
    call strlen
    mov r10, rax
-   print r9, r10
+
+   ;; Parse integer
+   mov rdi, r9
+   call atoi
 
    ;; Big-endian number
-   mov rdi, 8080
-   call endian
+   ;; mov rdi, rax
+   ;; call endian
 
    ;; Integer to ASCII
-   fn itoa, buf, rax
+   mov r9, rax
+   fn itoa, buf, r9 
 
    ;; Add carriage return
    fn append, buf, CARRIAGE_RETURN
    
    ;; Print buffer
-   ;; print buf, len
+   print buf, len
 
    ;; Exit with return code
    exit 0
@@ -102,6 +106,19 @@ endian:
     and rcx, rdi   ;; rcx 00000000bbbbbbbb
     shl rcx, 8     ;; rcx bbbbbbbb00000000
     or rax, rcx    ;; rax bbbbbbbbaaaaaaaa
+    ret
+
+;; ASCII to Integer
+;; rdi - pointer to byte array
+;; rax - return value
+atoi:
+    mov rdi, 2
+    mov rax, 10
+    mul rdi
+
+    mov rdi, rax
+    mov rax, 10
+    mul rdi
     ret
 
 segment readable writable
