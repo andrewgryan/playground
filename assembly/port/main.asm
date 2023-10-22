@@ -12,12 +12,12 @@ CARRIAGE_RETURN = 10
 segment readable executable
 entry main
 main:
-   ;; Put 1 in rdx buffer and bit shift left
-   mov rdx, 1
-   shl edx, 8
+   ;; Big-endian number
+   mov rdi, 8080
+   call endian
 
    ;; Integer to ASCII
-   fn itoa, buf, rdx
+   fn itoa, buf, rax
 
    ;; Add carriage return
    fn append, buf, CARRIAGE_RETURN
@@ -51,6 +51,22 @@ append:
     pop rdi               ;; Restore original pointer
     ret
 
+;; Endian
+endian:
+    ;; Move first byte
+    mov rcx, 0xFF  ;; Bit mask 0000000011111111
+    shl rcx, 8     ;; Bit mask 1111111100000000
+    and rcx, rdi   ;; rcx aaaaaaaa00000000
+    shr rcx, 8     ;; rcx 00000000aaaaaaaa
+    mov rax, rcx   ;; rax 00000000aaaaaaaa
+
+    ;; Move second byte
+    mov rcx, 0xFF  ;; Bit mask 0000000011111111
+    and rcx, rdi   ;; rcx 00000000bbbbbbbb
+    shl rcx, 8     ;; rcx bbbbbbbb00000000
+    or rax, rcx    ;; rax bbbbbbbbaaaaaaaa
+    ret
+
 segment readable writable
-buf db "    ", CARRIAGE_RETURN
+buf db "      ", CARRIAGE_RETURN
 len = $ - buf
