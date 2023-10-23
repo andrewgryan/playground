@@ -12,44 +12,60 @@ CARRIAGE_RETURN = 10
 segment readable executable
 entry main
 main:
-   ;; Command line parsing
-   pop r8  ;; Number of arguments
-   cmp r8, 2
-   jne .usage
+    ;; Command line parsing
+    pop r8  ;; Number of arguments
+    cmp r8, 2
+    jne .usage
 
-   ;; Program name
-   pop rsi
+    ;; Program name
+    pop rsi
 
-   ;; Parse first positional argument
-   pop r9
-   mov rdi, r9
-   call strlen
-   mov r10, rax
+    ;; Parse first positional argument
+    pop r9
+    mov rdi, r9
+    call strlen
+    mov r10, rax
 
-   ;; Parse integer
-   mov rdi, r9
-   call atoi
+    ;; Parse integer
+    mov rdi, r9
+    call atoi
 
-   ;; Big-endian number
-   ;; mov rdi, rax
-   ;; call endian
+    ;; Big-endian number
+    ;; mov rdi, rax
+    ;; call endian
 
-   ;; Integer to ASCII
-   mov r9, rax
-   fn itoa, buf, r9 
+    ;; Integer to ASCII
+    mov r9, rax
+    fn itoa, buf, r9 
 
-   ;; Add carriage return
-   fn append, buf, CARRIAGE_RETURN
-   
-   ;; Print buffer
-   print buf, len
+    ;; Add carriage return
+    fn append, buf, CARRIAGE_RETURN
 
-   ;; Exit with return code
-   exit 0
+    ;; Print buffer
+    print buf, len
+
+    ;; Test printing built-in HTML
+    print file_name, file_name_len
+
+    ;; syscall open
+    mov rax, SYS_OPEN
+    mov rdi, file_name
+    mov rsi, O_RDONLY
+    syscall
+    mov qword [fd], rax
+
+    ;; syscall close
+    mov rax, SYS_CLOSE
+    mov rdi, [fd]
+    syscall
+
+
+    ;; Exit with return code
+    exit 0
 
 .usage:
-   print usage_msg, usage_msg_len
-   exit 1
+    print usage_msg, usage_msg_len
+    exit 1
 
 ;; Null-terminated string length
 strlen:
@@ -128,3 +144,10 @@ len = $ - buf
 ;; Error message
 usage_msg db "Usage: ./main [port]", 10
 usage_msg_len = $ - usage_msg
+
+;; File name
+file_name db "index.html", 0
+file_name_len = $ - file_name
+
+;; File descriptor
+fd dq -1
