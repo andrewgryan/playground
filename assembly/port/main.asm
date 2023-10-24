@@ -42,7 +42,7 @@ main:
     fn append, buf, CARRIAGE_RETURN
 
     ;; Print buffer
-    print buf, len
+    ;; print buf, len
 
     ;; Test printing built-in HTML
     print file_name, file_name_len
