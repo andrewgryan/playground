@@ -47,19 +47,6 @@ main:
     ;; Test printing built-in HTML
     print file_name, file_name_len
 
-    ;; syscall open
-    mov rax, SYS_OPEN
-    mov rdi, file_name
-    mov rsi, O_RDONLY
-    syscall
-    mov qword [fd], rax
-
-    ;; syscall close
-    mov rax, SYS_CLOSE
-    mov rdi, [fd]
-    syscall
-
-
     ;; Exit with return code
     exit 0
 
@@ -146,7 +133,7 @@ usage_msg db "Usage: ./main [port]", 10
 usage_msg_len = $ - usage_msg
 
 ;; File name
-file_name db "index.html", 0
+file_name file "index.html"
 file_name_len = $ - file_name
 
 ;; File descriptor
