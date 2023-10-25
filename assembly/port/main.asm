@@ -45,6 +45,7 @@ main:
     ;; print buf, len
 
     ;; Test printing built-in HTML
+    print header, header_len
     print file_name, file_name_len
 
     ;; Exit with return code
@@ -124,6 +125,7 @@ atoi:
     mul rdi
     ret
 
+;; DATA
 segment readable writable
 buf db "      ", CARRIAGE_RETURN
 len = $ - buf
@@ -131,6 +133,13 @@ len = $ - buf
 ;; Error message
 usage_msg db "Usage: ./main [port]", 10
 usage_msg_len = $ - usage_msg
+
+;; HTTP Header
+header db "HTTP/1.1 200 OK", 13, 10
+       db "Content-Type: text/html; charset=utf-8", 13, 10
+       db "Connection: close", 13, 10
+       db 13, 10
+header_len = $ - header
 
 ;; File name
 file_name file "index.html"
