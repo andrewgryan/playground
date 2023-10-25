@@ -6,9 +6,19 @@ format ELF64 executable
 ;; 1. Reverse the bytes
 ;;
 include "lib.inc"
+include "../x86_64.inc"
+include "../socket.inc"
+include "structs.inc"
 
+;; GLOBALS
 CARRIAGE_RETURN = 10
+PORT = 36895 ;; 8080
+MAX_CONN = 5
+EXIT_SUCCESS = 0
+EXIT_FAILURE = 1
+REQUEST_CAP = 128*1024
 
+;; MAIN
 segment readable executable
 entry main
 main:
@@ -38,22 +48,93 @@ main:
     mov r9, rax
     fn itoa, buf, r9 
 
-    ;; Add carriage return
-    fn append, buf, CARRIAGE_RETURN
-
-    ;; Print buffer
-    ;; print buf, len
-
-    ;; Test printing built-in HTML
-    print header, header_len
-    print file_name, file_name_len
+    ;; Start HTTP server
+    call serve
 
     ;; Exit with return code
-    exit 0
+    exit EXIT_SUCCESS
 
 .usage:
     print usage_msg, usage_msg_len
-    exit 1
+    exit EXIT_FAILURE
+
+
+;; HTTP server
+serve:
+    ;; Greeting
+    write STDOUT, start, start_len
+
+    ;; Create a socket
+    socket AF_INET, SOCK_STREAM, 0
+    cmp rax, 0
+    jl .error
+    mov qword [sockfd], rax
+    write STDOUT, ok_msg, ok_msg_len
+
+    ;; Bind socket on port
+    write STDOUT, bind_trace_msg, bind_trace_msg_len
+    mov word [servaddr.sin_family], AF_INET
+    mov dword [servaddr.sin_addr], INADDR_ANY
+    mov word [servaddr.sin_port], PORT
+    bind [sockfd], servaddr.sin_family, servaddr_size
+    cmp rax, 0
+    jl .error
+    ;; Listen to HTTP connections
+    write STDOUT, listen_trace_msg, listen_trace_msg_len
+    listen [sockfd], MAX_CONN
+    cmp rax, 0
+    jl .error
+
+.next_http_request:
+    ;; Accept a request (blocking I/O)
+    write STDOUT, accept_trace_msg, accept_trace_msg_len
+    accept [sockfd], cliaddr.sin_family, cliaddr_size
+    cmp rax, 0
+    jl .error
+
+    ;; Store connection file descriptor
+    mov qword [connfd], rax
+
+    ;; TODO parse request header
+    read [connfd], request, REQUEST_CAP
+    cmp rax, 0
+    jl .error
+
+    ;; Echo HTTP request to STDOUT
+    mov [request_len], rax
+    mov [request_cur], request
+    write STDOUT, [request_cur], [request_len]
+
+    ;; Handle HTTP request
+    call handle_request
+
+    ;; Send HTTP response
+    write [connfd], [response_cur], [response_len]
+    close [connfd]
+
+    ;; Event loop
+    jmp .next_http_request
+
+    ;; OK and Close
+    write STDOUT, ok_msg, ok_msg_len
+    close [connfd]
+    close [sockfd]
+
+    ret
+
+.error:
+    write STDERR, error_msg, error_msg_len
+    close [connfd]
+    close [sockfd]
+    exit EXIT_FAILURE
+
+
+;; HTTP Request handler
+handle_request:
+    ;; TODO implement branching logic and response
+    write [connfd], header, header_len
+    write [connfd], body, body_len
+    ret
 
 ;; Null-terminated string length
 strlen:
@@ -142,8 +223,41 @@ header db "HTTP/1.1 200 OK", 13, 10
 header_len = $ - header
 
 ;; File name
-file_name file "index.html"
-file_name_len = $ - file_name
+body file "index.html"
+body_len = $ - body
 
-;; File descriptor
-fd dq -1
+
+;; HTTP Server data
+sockfd dq -1
+connfd dq -1
+
+servaddr servaddr_in
+servaddr_size = $ - servaddr.sin_family
+
+cliaddr servaddr_in
+cliaddr_size dd servaddr_size
+
+start db "INFO: Starting Web-site!", 10
+start_len = $ - start
+error_msg db "ERROR", 10
+error_msg_len = $ - error_msg
+socket_trace_msg db "INFO: Starting a socket...", 10
+socket_trace_msg_len = $ - socket_trace_msg
+bind_trace_msg db "INFO: Bind the socket...", 10
+bind_trace_msg_len = $ - bind_trace_msg
+listen_trace_msg db "INFO: Listening to socket...", 10
+listen_trace_msg_len = $ - listen_trace_msg
+accept_trace_msg db "INFO: Waiting for client connections...", 10
+accept_trace_msg_len = $ - accept_trace_msg
+ok_msg db "INFO: OK", 10
+ok_msg_len = $ - ok_msg
+
+;; Storage for request
+request_len rq 1
+request_cur rq 1
+request rb REQUEST_CAP
+
+response_len rq 1
+response_cur rq 1
+response rb REQUEST_CAP
+
