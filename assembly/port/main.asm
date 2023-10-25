@@ -132,7 +132,8 @@ serve:
 ;; HTTP Request handler
 handle_request:
     ;; TODO implement branching logic and response
-    write [connfd], header, header_len
+    ;; write [connfd], header, header_len
+    write [connfd], image_header, image_header_len
     write [connfd], body, body_len
     ret
 
@@ -222,8 +223,14 @@ header db "HTTP/1.1 200 OK", 13, 10
        db 13, 10
 header_len = $ - header
 
+image_header db "HTTP/1.1 200 OK", 13, 10
+       db "Content-Type: image/jpg", 13, 10
+       db "Connection: close", 13, 10
+       db 13, 10
+image_header_len = $ - image_header
+
 ;; File name
-body file "index.html"
+body file "hello.jpg"
 body_len = $ - body
 
 
