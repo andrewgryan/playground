@@ -173,11 +173,11 @@ handle_request:
 .not_found:
     write STDOUT, error_header, error_header_len
     write STDOUT, html_header, html_header_len
-    write STDOUT, index, index_len
+    write STDOUT, not_found, not_found_len
 
     write [connfd], error_header, error_header_len
     write [connfd], html_header, html_header_len
-    write [connfd], index, index_len
+    write [connfd], not_found, not_found_len
     jmp .done
 
 .done:
@@ -291,6 +291,9 @@ index_len = $ - index
 
 image file "hello.jpg"
 image_len = $ - image
+
+not_found file "404.html"
+not_found_len = $ - not_found
 
 ;; HTTP Server data
 sockfd dq -1

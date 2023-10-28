@@ -12,20 +12,11 @@ match_prefix:
     push rdi     ;; Save prefix length
     push rsi     ;; Save string pointer
     push rdx     ;; Save string pointer
-    push rbp     ;; Save base pointer
-    mov rbp, rsp ;; Set base pointer to stack pointer
-    sub rsp, 2   ;; Allocate space for variables
 
 .loop:
-    ;; Assign chars to local variables
-    mov byte al, [rsi]
-    mov byte [rbp-2], al
-    mov byte al, [rdx]
-    mov byte [rbp-1], al
-
     ;; Compare ASCII values
-    mov byte al, [rbp-2]
-    mov byte cl, [rbp-1]
+    mov byte al, [rsi]
+    mov byte cl, [rdx]
     cmp al, cl
     jne .not_equal
 
@@ -49,10 +40,6 @@ match_prefix:
     jmp .done
 
 .done:
-    ;; Reset stack and base pointers
-    mov rsp, rbp
-    pop rbp
-
     ;; Set rax
     mov rax, r8
 
