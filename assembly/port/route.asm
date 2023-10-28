@@ -15,19 +15,15 @@ match_prefix:
 
 .loop:
     ;; Compare ASCII values
-    mov byte al, [rsi]
-    mov byte cl, [rdx]
-    cmp al, cl
+    mov byte r9b, [rsi+rdi]
+    mov byte r10b, [rdx+rdi]
+    cmp r9b, r10b
     jne .not_equal
-
-    ;; Increment buffer pointers
-    inc rsi
-    inc rdx
 
     ;; Decrement prefix length
     dec rdi
     cmp rdi, 0
-    je .equal
+    jl .equal
 
     jmp .loop
 

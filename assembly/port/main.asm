@@ -102,7 +102,6 @@ serve:
     write STDOUT, [request_cur], [request_len]
 
     ;; Handle HTTP request
-    mov rdi, request_cur
     call handle_request
 
     ;; Send HTTP response
@@ -129,23 +128,22 @@ serve:
 ;; HTTP Request handler
 handle_request:
     xor rax, rax
-    mov r8, rdi  ;; Copy pointer to HTTP request
-
-    ;; GET /hello.jpg
-    mov rdi, route_image_len
-    mov rsi, route_image
-    mov rdx, r8
-    call match_prefix
-    cmp rax, 0
-    je .image
 
     ;; GET /
     mov rdi, route_index_len
     mov rsi, route_index
-    mov rdx, r8
+    mov rdx, [request_cur]
     call match_prefix
     cmp rax, 0
     je .index
+
+    ;; GET /hello.jpg
+    mov rdi, route_image_len
+    mov rsi, route_image
+    mov rdx, [request_cur]
+    call match_prefix
+    cmp rax, 0
+    je .image
 
     ;; 404
     jmp .not_found
