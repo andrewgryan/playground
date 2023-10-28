@@ -131,6 +131,14 @@ handle_request:
     xor rax, rax
     mov r8, rdi  ;; Copy pointer to HTTP request
 
+    ;; GET /hello.jpg
+    mov rdi, route_image_len
+    mov rsi, route_image
+    mov rdx, r8
+    call match_prefix
+    cmp rax, 0
+    je .image
+
     ;; GET /
     mov rdi, route_index_len
     mov rsi, route_index
@@ -139,33 +147,37 @@ handle_request:
     cmp rax, 0
     je .index
 
-    ;; GET /hello.png
-    mov rdi, route_image_len
-    mov rsi, route_image
-    mov rdx, r8
-    call match_prefix
-    cmp rax, 0
-    je .image
-
     ;; 404
     jmp .not_found
 
-.not_found:
-    write [connfd], error_header, error_header_len
-    write [connfd], html_header, html_header_len
-    write [connfd], index, index_len
-    jmp .done
-
 .index:
+    write STDOUT, ok_header, ok_header_len
+    write STDOUT, html_header, html_header_len
+    write STDOUT, index, index_len
+
     write [connfd], ok_header, ok_header_len
     write [connfd], html_header, html_header_len
     write [connfd], index, index_len
     jmp .done
 
 .image:
+    write STDOUT, ok_header, ok_header_len
+    write STDOUT, jpg_header, jpg_header_len
+    write STDOUT, image, image_len
+
     write [connfd], ok_header, ok_header_len
     write [connfd], jpg_header, jpg_header_len
     write [connfd], image, image_len
+    jmp .done
+
+.not_found:
+    write STDOUT, error_header, error_header_len
+    write STDOUT, html_header, html_header_len
+    write STDOUT, index, index_len
+
+    write [connfd], error_header, error_header_len
+    write [connfd], html_header, html_header_len
+    write [connfd], index, index_len
     jmp .done
 
 .done:
