@@ -4,6 +4,7 @@ include "lib.inc"
 include "../x86_64.inc"
 include "../socket.inc"
 include "structs.inc"
+include "route.asm"
 
 ;; GLOBALS
 CARRIAGE_RETURN = 10
@@ -101,6 +102,7 @@ serve:
     write STDOUT, [request_cur], [request_len]
 
     ;; Handle HTTP request
+    mov rdi, request_cur
     call handle_request
 
     ;; Send HTTP response
@@ -127,41 +129,46 @@ serve:
 ;; HTTP Request handler
 handle_request:
     xor rax, rax
+    mov r8, rdi  ;; Copy pointer to HTTP request
 
     ;; GET /
-    call match_index
+    mov rdi, route_index_len
+    mov rsi, route_index
+    mov rdx, r8
+    call match_prefix
     cmp rax, 0
     je .index
 
     ;; GET /hello.png
-    call match_image
+    mov rdi, route_image_len
+    mov rsi, route_image
+    mov rdx, r8
+    call match_prefix
     cmp rax, 0
     je .image
 
-    ;; TODO: 404
+    ;; 404
+    jmp .not_found
+
+.not_found:
+    write [connfd], error_header, error_header_len
+    write [connfd], html_header, html_header_len
+    write [connfd], index, index_len
     jmp .done
 
 .index:
+    write [connfd], ok_header, ok_header_len
     write [connfd], html_header, html_header_len
     write [connfd], index, index_len
     jmp .done
 
 .image:
+    write [connfd], ok_header, ok_header_len
     write [connfd], jpg_header, jpg_header_len
     write [connfd], image, image_len
     jmp .done
 
 .done:
-    ret
-
-;; GET /
-match_index:
-    mov rax, 0
-    ret
-
-;; GET /hello.jpg
-match_image:
-    mov rax, 1
     ret
 
 ;; Null-terminated string length
@@ -244,17 +251,27 @@ usage_msg db "Usage: ./main [port]", 10
 usage_msg_len = $ - usage_msg
 
 ;; HTTP Header
-html_header db "HTTP/1.1 200 OK", 13, 10
-            db "Content-Type: text/html; charset=utf-8", 13, 10
+ok_header db "HTTP/1.1 200 OK", 13, 10
+ok_header_len = $ - ok_header
+
+error_header db "HTTP/1.1 404 Not Found", 13, 10
+error_header_len = $ - error_header
+
+html_header db "Content-Type: text/html; charset=utf-8", 13, 10
             db "Connection: close", 13, 10
             db 13, 10
 html_header_len = $ - html_header
 
-jpg_header db "HTTP/1.1 200 OK", 13, 10
-           db "Content-Type: image/jpg", 13, 10
+jpg_header db "Content-Type: image/jpg", 13, 10
            db "Connection: close", 13, 10
            db 13, 10
 jpg_header_len = $ - jpg_header
+
+;; Route
+route_index db "GET / "
+route_index_len = $ - route_index
+route_image db "GET /hello.jpg "
+route_image_len = $ - route_image
 
 ;; File name
 index file "index.html"
