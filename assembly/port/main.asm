@@ -1,10 +1,5 @@
 format ELF64 executable
-;; Convert PORT number from decimal to network endian decimal
-;;
-;; Algorithm
-;; ---------
-;; 1. Reverse the bytes
-;;
+
 include "lib.inc"
 include "../x86_64.inc"
 include "../socket.inc"
@@ -131,10 +126,42 @@ serve:
 
 ;; HTTP Request handler
 handle_request:
-    ;; TODO implement branching logic and response
-    ;; write [connfd], header, header_len
-    write [connfd], image_header, image_header_len
-    write [connfd], body, body_len
+    xor rax, rax
+
+    ;; GET /
+    call match_index
+    cmp rax, 0
+    je .index
+
+    ;; GET /hello.png
+    call match_image
+    cmp rax, 0
+    je .image
+
+    ;; TODO: 404
+    jmp .done
+
+.index:
+    write [connfd], html_header, html_header_len
+    write [connfd], index, index_len
+    jmp .done
+
+.image:
+    write [connfd], jpg_header, jpg_header_len
+    write [connfd], image, image_len
+    jmp .done
+
+.done:
+    ret
+
+;; GET /
+match_index:
+    mov rax, 0
+    ret
+
+;; GET /hello.jpg
+match_image:
+    mov rax, 1
     ret
 
 ;; Null-terminated string length
@@ -217,22 +244,24 @@ usage_msg db "Usage: ./main [port]", 10
 usage_msg_len = $ - usage_msg
 
 ;; HTTP Header
-header db "HTTP/1.1 200 OK", 13, 10
-       db "Content-Type: text/html; charset=utf-8", 13, 10
-       db "Connection: close", 13, 10
-       db 13, 10
-header_len = $ - header
+html_header db "HTTP/1.1 200 OK", 13, 10
+            db "Content-Type: text/html; charset=utf-8", 13, 10
+            db "Connection: close", 13, 10
+            db 13, 10
+html_header_len = $ - html_header
 
-image_header db "HTTP/1.1 200 OK", 13, 10
-       db "Content-Type: image/jpg", 13, 10
-       db "Connection: close", 13, 10
-       db 13, 10
-image_header_len = $ - image_header
+jpg_header db "HTTP/1.1 200 OK", 13, 10
+           db "Content-Type: image/jpg", 13, 10
+           db "Connection: close", 13, 10
+           db 13, 10
+jpg_header_len = $ - jpg_header
 
 ;; File name
-body file "hello.jpg"
-body_len = $ - body
+index file "index.html"
+index_len = $ - index
 
+image file "hello.jpg"
+image_len = $ - image
 
 ;; HTTP Server data
 sockfd dq -1
