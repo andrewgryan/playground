@@ -144,6 +144,11 @@ handle_request:
     cmp rax, 0
     je .handle_image
 
+    ;; GET /style.css
+    fn4 match_route, [request_cur], [request_len], route_style, route_style_len
+    cmp rax, 0
+    je .handle_style
+
     ;; 404
     jmp .not_found
 
@@ -163,6 +168,12 @@ handle_request:
     write [connfd], ok_header, ok_header_len
     write [connfd], jpg_header, jpg_header_len
     write [connfd], image, image_len
+    jmp .done
+
+.handle_style:
+    write [connfd], ok_header, ok_header_len
+    write [connfd], css_header, css_header_len
+    write [connfd], style, style_len
     jmp .done
 
 .not_found:
@@ -270,6 +281,11 @@ jpg_header db "Content-Type: image/jpg", 13, 10
            db 13, 10
 jpg_header_len = $ - jpg_header
 
+css_header db "Content-Type: text/css", 13, 10
+           db "Connection: close", 13, 10
+           db 13, 10
+css_header_len = $ - css_header
+
 ;; Route
 route_index db "GET / "
 route_index_len = $ - route_index
@@ -277,16 +293,18 @@ route_about db "GET /about "
 route_about_len = $ - route_about
 route_image db "GET /hello.jpg "
 route_image_len = $ - route_image
+route_style db "GET /style.css "
+route_style_len = $ - route_style
 
 ;; File name
 index file "index.html"
 index_len = $ - index
-
 about file "about.html"
 about_len = $ - about
-
 image file "hello.jpg"
 image_len = $ - image
+style file "style.css"
+style_len = $ - style
 
 not_found file "404.html"
 not_found_len = $ - not_found
