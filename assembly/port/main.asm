@@ -130,49 +130,31 @@ handle_request:
     xor rax, rax
 
     ;; GET /
-    mov rdi, route_index_len
-    mov rsi, route_index
-    mov rdx, [request_cur]
-    call match_prefix
+    fn4 match_route, [request_cur], [request_len], route_index, route_index_len
     cmp rax, 0
-    je .index
+    jl .index
 
-    ;; GET /hello.jpg
-    mov rdi, route_image_len
-    mov rsi, route_image
-    mov rdx, [request_cur]
-    call match_prefix
-    cmp rax, 0
-    je .image
+    ; ;; GET /hello.jpg
+    ; fn4 match_route, [request_cur], [request_len], route_image, route_image_len
+    ; cmp rax, 0
+    ; jl .image
 
     ;; 404
     jmp .not_found
 
 .index:
-    write STDOUT, ok_header, ok_header_len
-    write STDOUT, html_header, html_header_len
-    write STDOUT, index, index_len
-
     write [connfd], ok_header, ok_header_len
     write [connfd], html_header, html_header_len
     write [connfd], index, index_len
     jmp .done
 
 .image:
-    write STDOUT, ok_header, ok_header_len
-    write STDOUT, jpg_header, jpg_header_len
-    write STDOUT, image, image_len
-
     write [connfd], ok_header, ok_header_len
     write [connfd], jpg_header, jpg_header_len
     write [connfd], image, image_len
     jmp .done
 
 .not_found:
-    write STDOUT, error_header, error_header_len
-    write STDOUT, html_header, html_header_len
-    write STDOUT, not_found, not_found_len
-
     write [connfd], error_header, error_header_len
     write [connfd], html_header, html_header_len
     write [connfd], not_found, not_found_len
