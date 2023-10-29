@@ -7,16 +7,21 @@ include "route.asm"
 segment readable executable
 entry main
 main:
+        ;; Route handling
         fn4 match_route, message, message_len, route_index, route_index_len
         cmp rax, 0
-        jl .not_ok
+        jl .handle_index
 
-.ok:
-        print ok, ok_len
+        fn4 match_route, message, message_len, route_image, route_image_len
+        cmp rax, 0
+        jl .handle_image
+
+.handle_index:
+        print message_index, message_index_len
         jmp .done
 
-.not_ok:
-        print not_ok, not_ok_len
+.handle_image:
+        print message_image, message_image_len
         jmp .done
 
 .done:
@@ -29,13 +34,14 @@ segment readable writable
 message db "GET / HTTP/1.1"
 message_len = $ - message
 
-ok db "OK", 10
-ok_len = $ - ok
-not_ok db "NOT OK", 10
-not_ok_len = $ - not_ok
+message_index db "Route: /", 10
+message_index_len = $ - message_index
+
+message_image db "Route: /image.jpg", 10
+message_image_len = $ - message_image
 
 ;; Route
 route_index db "GET / "
 route_index_len = $ - route_index
-route_image db "GET /hello.jpg "
+route_image db "GET /image.jpg "
 route_image_len = $ - route_image
