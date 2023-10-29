@@ -10,11 +10,13 @@ main:
         ;; Route handling
         fn4 match_route, message, message_len, route_index, route_index_len
         cmp rax, 0
-        jl .handle_index
+        je .handle_index
 
         fn4 match_route, message, message_len, route_image, route_image_len
         cmp rax, 0
-        jl .handle_image
+        je .handle_image
+
+        jmp .done
 
 .handle_index:
         print message_index, message_index_len
@@ -31,7 +33,7 @@ main:
 segment readable writable
 
 ;; HTTP Message
-message db "GET / HTTP/1.1"
+message db "GET /image.jpg HTTP/1.1"
 message_len = $ - message
 
 message_index db "Route: /", 10
