@@ -132,12 +132,12 @@ handle_request:
     ;; GET /
     fn4 match_route, [request_cur], [request_len], route_index, route_index_len
     cmp rax, 0
-    jl .index
+    je .index
 
-    ; ;; GET /hello.jpg
-    ; fn4 match_route, [request_cur], [request_len], route_image, route_image_len
-    ; cmp rax, 0
-    ; jl .image
+    ;; GET /hello.jpg
+    fn4 match_route, [request_cur], [request_len], route_image, route_image_len
+    cmp rax, 0
+    je .image
 
     ;; 404
     jmp .not_found
