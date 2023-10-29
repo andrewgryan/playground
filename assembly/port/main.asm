@@ -132,23 +132,34 @@ handle_request:
     ;; GET /
     fn4 match_route, [request_cur], [request_len], route_index, route_index_len
     cmp rax, 0
-    je .index
+    je .handle_index
+
+    ;; GET /about
+    fn4 match_route, [request_cur], [request_len], route_about, route_about_len
+    cmp rax, 0
+    je .handle_about
 
     ;; GET /hello.jpg
     fn4 match_route, [request_cur], [request_len], route_image, route_image_len
     cmp rax, 0
-    je .image
+    je .handle_image
 
     ;; 404
     jmp .not_found
 
-.index:
+.handle_index:
     write [connfd], ok_header, ok_header_len
     write [connfd], html_header, html_header_len
     write [connfd], index, index_len
     jmp .done
 
-.image:
+.handle_about:
+    write [connfd], ok_header, ok_header_len
+    write [connfd], html_header, html_header_len
+    write [connfd], about, about_len
+    jmp .done
+
+.handle_image:
     write [connfd], ok_header, ok_header_len
     write [connfd], jpg_header, jpg_header_len
     write [connfd], image, image_len
@@ -262,12 +273,17 @@ jpg_header_len = $ - jpg_header
 ;; Route
 route_index db "GET / "
 route_index_len = $ - route_index
+route_about db "GET /about "
+route_about_len = $ - route_about
 route_image db "GET /hello.jpg "
 route_image_len = $ - route_image
 
 ;; File name
 index file "index.html"
 index_len = $ - index
+
+about file "about.html"
+about_len = $ - about
 
 image file "hello.jpg"
 image_len = $ - image
