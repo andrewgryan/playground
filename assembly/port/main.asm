@@ -6,6 +6,7 @@ include "../socket.inc"
 include "structs.inc"
 include "route.asm"
 include "atoi.asm"
+include "fns.asm"
 
 ;; GLOBALS
 CARRIAGE_RETURN = 10
@@ -33,20 +34,20 @@ main:
     call strlen
     mov r10, rax
 
-    ;; Parse integer
-    mov rdi, r9
-    call atoi
+    ; ;; Parse integer
+    ; mov rdi, r9
+    ; call atoi
 
     ;; Big-endian number
     ;; mov rdi, rax
     ;; call endian
 
-    ;; Integer to ASCII
-    mov r9, rax
-    fn itoa, buf, r9 
+    ; ;; Integer to ASCII
+    ; mov r9, rax
+    ; fn itoa, buf, r9
 
     ;; Start HTTP server
-    call serve
+    fn1 serve, PORT
 
     ;; Exit with return code
     exit EXIT_SUCCESS
@@ -58,6 +59,8 @@ main:
 
 ;; HTTP server
 serve:
+    mov r8, rdi
+
     ;; Greeting
     write STDOUT, start, start_len
 
@@ -72,7 +75,7 @@ serve:
     write STDOUT, bind_trace_msg, bind_trace_msg_len
     mov word [servaddr.sin_family], AF_INET
     mov dword [servaddr.sin_addr], INADDR_ANY
-    mov word [servaddr.sin_port], PORT
+    mov word [servaddr.sin_port], r8w
     bind [sockfd], servaddr.sin_family, servaddr_size
     cmp rax, 0
     jl .error

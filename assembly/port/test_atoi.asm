@@ -1,6 +1,7 @@
 format ELF64 executable
 
 include "atoi.asm"
+include "fns.asm"
 include "lib.inc"
 
 ;; MAIN

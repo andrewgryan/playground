@@ -38,10 +38,3 @@ atoi:
 .done:
         mov rax, r9         ;; Copy total to return register
         ret
-
-;; 2 argument function call
-macro fn2 method, a, b {
-    mov rdi, a
-    mov rsi, b
-    call method
-}
