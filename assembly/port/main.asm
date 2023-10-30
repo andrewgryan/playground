@@ -5,6 +5,7 @@ include "../x86_64.inc"
 include "../socket.inc"
 include "structs.inc"
 include "route.asm"
+include "atoi.asm"
 
 ;; GLOBALS
 CARRIAGE_RETURN = 10
@@ -242,18 +243,6 @@ endian:
     or rax, rcx    ;; rax bbbbbbbbaaaaaaaa
     ret
 
-;; ASCII to Integer
-;; rdi - pointer to byte array
-;; rax - return value
-atoi:
-    mov rdi, 2
-    mov rax, 10
-    mul rdi
-
-    mov rdi, rax
-    mov rax, 10
-    mul rdi
-    ret
 
 ;; DATA
 segment readable writable
