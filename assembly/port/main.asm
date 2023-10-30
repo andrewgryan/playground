@@ -34,20 +34,16 @@ main:
     call strlen
     mov r10, rax
 
-    ; ;; Parse integer
-    ; mov rdi, r9
-    ; call atoi
+    ;; Parse integer
+    fn2 atoi, r9, r10
 
     ;; Big-endian number
-    ;; mov rdi, rax
-    ;; call endian
-
-    ; ;; Integer to ASCII
-    ; mov r9, rax
-    ; fn itoa, buf, r9
+    mov r8, rax
+    fn1 endian, r8
 
     ;; Start HTTP server
-    fn1 serve, PORT
+    mov r8, rax
+    fn1 serve, r8
 
     ;; Exit with return code
     exit EXIT_SUCCESS
