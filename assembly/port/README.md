@@ -14,3 +14,11 @@ assembler it requires identifiers to map to values.
 When a request gets made for an endpoint, the `handle_request:` section
 fans out the work to the appropriate sub-handler. Our program can
 send a template, pattern and value to a handler.
+
+
+## Memory
+
+- 64-bit (8 bytes) pointer
+- 64-bit (8 bytes) length
+- 64-bit (8 bytes) pointer
+- 64-bit (8 bytes) length

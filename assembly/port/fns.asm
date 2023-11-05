@@ -10,3 +10,12 @@ macro fn2 method, a, b {
         mov rsi, b
         call method
 }
+
+;; 4 argument function call
+macro fn4 method, a, b, c, d {
+        mov rdi, a
+        mov rsi, b
+        mov rcx, c
+        mov rdx, d
+        call method
+}
