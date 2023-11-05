@@ -7,6 +7,7 @@ include "route.asm"
 segment readable executable
 entry main
 main:
+        print template, template_len
         fn4 pattern_match, template, template_len, pattern, pattern_len
         mov r9, rax
         exit r9
