@@ -16,7 +16,7 @@ pattern_match:
         push rsp
 
         mov rbp, rsp
-        sub rbp, 32  ;; Make 32 bytes of temporary memory
+        sub rbp, 48                  ;; bytes of stack memory
 
         ; ;; Store arguments on the stack
         mov [rbp], rdi
@@ -24,9 +24,17 @@ pattern_match:
         mov [rbp+16], rcx
         mov [rbp+24], rdx
 
+        ;; Local variables
+        mov [rbp+32], 0
+        mov [rbp+40], 0
+
         ;; Find position of first char
-        print [rbp], [rbp+8]
-        print [rbp+16], [rbp+24]
+        mov r8, byte [rbp+8]         ;; pattern char
+        .loop:
+                fn4 prefix_match [], [], [], []
+                cmp rax, 0
+                jl .loop
+        .done:
 
         ;; Restore stack pointer
         pop rsp
