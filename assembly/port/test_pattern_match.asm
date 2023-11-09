@@ -68,6 +68,11 @@ pattern_match:
                 pop rbp
                 ret
 
+
+concat:
+        ;; Concatenate strings
+
+
 ;; DATA
 segment readable writable
         debug db "Debug", 10
