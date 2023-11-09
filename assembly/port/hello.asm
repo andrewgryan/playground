@@ -27,22 +27,26 @@ macro call1 method, a {
 segment readable executable
 entry main
 main:
-	; Stack storage
 	mov rbp, rsp
-	sub rbp, 16
+	sub rbp, 32
 
 	; Command line arguments
 	pop rax
-	cmp rax, 2
+	cmp rax, 3
 	jne .abort
 
-	pop qword [rbp]  	;; discard program name
-	pop qword [rbp]  	;; 1st arg
-	call1 strlen, [rbp]	;; length of 1st arg
-	mov [rbp + 8], rax
+	pop qword [rbp]  		; discard program name
+	pop qword [rbp]  		; 1st arg
+	pop qword [rbp + 16]    	; 2nd arg
 
-	; Echo argument 1
-	echo [rbp], [rbp + 8]
+	call1 strlen, [rbp]		; 1st arg length
+	mov [rbp + 8], rax		; 1st arg length save
+	call1 strlen, [rbp + 16]	; 2nd arg length
+	mov [rbp + 24], rax		; 2nd arg length save
+
+	echo [rbp + 0], [rbp + 8] 	; Echo arg 1
+	echo [rbp + 16], [rbp + 24] 	; Echo arg 2
+
 	exit 0
 
 .abort:
