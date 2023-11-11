@@ -28,7 +28,7 @@ segment readable executable
 entry main
 main:
 	mov rbp, rsp
-	sub rbp, 32
+	sub rbp, 48
 
 	; Command line arguments
 	pop rax
@@ -44,8 +44,28 @@ main:
 	call1 strlen, [rbp + 16]	; 2nd arg length
 	mov [rbp + 24], rax		; 2nd arg length save
 
-	echo [rbp + 0], [rbp + 8] 	; Echo arg 1
-	echo [rbp + 16], [rbp + 24] 	; Echo arg 2
+	; echo [rbp + 0], [rbp + 8] 	; Echo arg 1
+	; echo [rbp + 16], [rbp + 24] 	; Echo arg 2
+
+	; Stack-based str
+	mov [rbp + 32], byte 0x41
+	mov [rbp + 33], byte 0x6E
+	mov [rbp + 34], byte 0x64
+	mov [rbp + 35], byte 0x79
+	mov [rbp + 36], byte 0x20
+	mov [rbp + 37], byte 0x72
+	mov [rbp + 38], byte 0x75
+	mov [rbp + 39], byte 0x6C
+	mov [rbp + 40], byte 0x65
+	mov [rbp + 41], byte 0x73
+	mov [rbp + 42], byte 0x21
+	mov [rbp + 43], byte 0xa
+	mov [rbp + 44], byte 0x0
+	mov r10, rbp
+	add r10, 32
+	call1 strlen, r10
+	mov r9, rax
+	echo r10, r9
 
 	exit 0
 
@@ -70,3 +90,6 @@ strlen:
 segment readable writable
 	msg db "too few arguments", 0xa
 	msg_len = $ - msg
+
+	icon db 0x78
+	icon_len = $ - icon
