@@ -49,18 +49,9 @@ main:
 
 	; Stack-based str
 	lea r10, [rbp + 32]
-	mov [r10 + 0], byte 0x41
-	mov [r10 + 1], byte 0x6E
-	mov [r10 + 2], byte 0x64
-	mov [r10 + 3], byte 0x79
-	mov [r10 + 4], byte 0x20
-	mov [r10 + 5], byte 0x72
-	mov [r10 + 6], byte 0x75
-	mov [r10 + 7], byte 0x6C
-	mov [r10 + 8], byte 0x65
-	mov [r10 + 9], byte 0x73
-	mov [r10 + 10], byte 0x21
-	mov [r10 + 11], byte 0xa
+	mov [r10 + 0], dword 0x79646E41
+	mov [r10 + 4], dword 0x6C757220
+	mov [r10 + 8], dword 0x0a217365
 	echo r10, 12
 
 	exit 0
