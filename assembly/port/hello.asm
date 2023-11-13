@@ -61,10 +61,7 @@ main:
 	mov [r10 + 9], byte 0x73
 	mov [r10 + 10], byte 0x21
 	mov [r10 + 11], byte 0xa
-	mov [r10 + 12], byte 0x0
-	call1 strlen, r10
-	mov r9, rax
-	echo r10, r9
+	echo r10, 12
 
 	exit 0
 
