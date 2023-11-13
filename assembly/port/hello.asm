@@ -48,25 +48,26 @@ main:
 	; echo [rbp + 16], [rbp + 24] 	; Echo arg 2
 
 	; Stack-based str
-	lea r10, [rbp + 32]
-	mov [r10 + 0], dword 0x79646E41
-	mov [r10 + 4], dword 0x6C757220
-	mov [r10 + 8], dword 0x0a217365
+	call quote
+	mov r10, rax
 	echo r10, 12
 
-	; Pass-by stack
-	push 5
-	call func
-	mov r8, rax
-	exit r8
+	exit 0
 
 .abort:
 	echo msg, msg_len
 	exit 1
 
-
-func:
-	mov rax, [rbp + 8]	; read from stack above base pointer
+quote:
+	push rbp
+	mov rbp, rsp
+	sub rbp, 12
+	lea r10, [rbp]
+	mov [r10 + 0], dword 0x79646E41
+	mov [r10 + 4], dword 0x6C757220
+	mov [r10 + 8], dword 0x0a217365
+	pop rbp
+	mov rax, r10
 	ret
 
 ;; string length
