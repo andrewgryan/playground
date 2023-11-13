@@ -54,11 +54,20 @@ main:
 	mov [r10 + 8], dword 0x0a217365
 	echo r10, 12
 
-	exit 0
+	; Pass-by stack
+	push 5
+	call func
+	mov r8, rax
+	exit r8
 
 .abort:
 	echo msg, msg_len
 	exit 1
+
+
+func:
+	mov rax, [rbp + 8]	; read from stack above base pointer
+	ret
 
 ;; string length
 ;;
