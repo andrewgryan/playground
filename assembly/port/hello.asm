@@ -48,19 +48,20 @@ main:
 	; echo [rbp + 16], [rbp + 24] 	; Echo arg 2
 
 	; Stack-based str
-	mov [rbp + 32], byte 0x41
-	mov [rbp + 33], byte 0x6E
-	mov [rbp + 34], byte 0x64
-	mov [rbp + 35], byte 0x79
-	mov [rbp + 36], byte 0x20
-	mov [rbp + 37], byte 0x72
-	mov [rbp + 38], byte 0x75
-	mov [rbp + 39], byte 0x6C
-	mov [rbp + 40], byte 0x65
-	mov [rbp + 41], byte 0x73
-	mov [rbp + 42], byte 0x21
-	mov [rbp + 43], byte 0xa
-	mov [rbp + 44], byte 0x0
+	lea rdi, [rbp + 32]
+	mov [rdi + 0], byte 0x41
+	mov [rdi + 1], byte 0x6E
+	mov [rdi + 2], byte 0x64
+	mov [rdi + 3], byte 0x79
+	mov [rdi + 4], byte 0x20
+	mov [rdi + 5], byte 0x72
+	mov [rdi + 6], byte 0x75
+	mov [rdi + 7], byte 0x6C
+	mov [rdi + 8], byte 0x65
+	mov [rdi + 9], byte 0x73
+	mov [rdi + 10], byte 0x21
+	mov [rdi + 11], byte 0xa
+	mov [rdi + 12], byte 0x0
 	mov r10, rbp
 	add r10, 32
 	call1 strlen, r10
