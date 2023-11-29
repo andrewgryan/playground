@@ -28,29 +28,24 @@ segment readable executable
 entry main
 main:
 	mov rbp, rsp
-	sub rbp, 48
+	sub rbp, 32
 
-	; Command line arguments
-	pop rax
-	cmp rax, 3
-	jne .abort
+	; Print alphabet
+	mov r8, 26
+	mov r9, 48
 
-	pop qword [rbp]  		; discard program name
-	pop qword [rbp]  		; 1st arg
-	pop qword [rbp + 16]    	; 2nd arg
+.loop:
+	dec r8
+	inc r9
+	mov r9, [rbp + r8]
+	cmp r8, 0
+	jnz .loop
 
-	call1 strlen, [rbp]		; 1st arg length
-	mov [rbp + 8], rax		; 1st arg length save
-	call1 strlen, [rbp + 16]	; 2nd arg length
-	mov [rbp + 24], rax		; 2nd arg length save
-
-	; echo [rbp + 0], [rbp + 8] 	; Echo arg 1
-	; echo [rbp + 16], [rbp + 24] 	; Echo arg 2
-
-	; Stack-based str
-	call quote
-	mov r10, rax
-	echo r10, 12
+	mov rax, SYS_write
+	mov rdi, STDOUT
+	mov rsi, rbp
+	mov rdx, 26
+	syscall
 
 	exit 0
 
@@ -58,17 +53,6 @@ main:
 	echo msg, msg_len
 	exit 1
 
-quote:
-	push rbp
-	mov rbp, rsp
-	sub rbp, 12
-	lea r10, [rbp]
-	mov [r10 + 0], dword 0x79646E41
-	mov [r10 + 4], dword 0x6C757220
-	mov [r10 + 8], dword 0x0a217365
-	pop rbp
-	mov rax, r10
-	ret
 
 ;; string length
 ;;
