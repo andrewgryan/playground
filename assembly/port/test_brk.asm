@@ -15,11 +15,8 @@ main:
         mov rdi, 0
         syscall
 
-        ; Save address of breakpoint
-        mov r8, rax
-
         ; Ask for a new breakpoint
-        lea rdi, [rax + 3]
+        lea rdi, [rax + 256]
         mov rax, SYS_brk
         syscall
 
@@ -27,15 +24,20 @@ main:
         mov r10, rax
 
         ; Write a character into the allocated address
-        mov [r10], byte 49
-        mov [r10 + 1], byte 50
-        mov [r10 + 2], byte 10
+        mov r8b, 33
+.loop:
+        mov [r10 + r8], byte r8b
+        inc r8
+        cmp r8, 255
+        je .done
+        jmp .loop
 
+.done:
         ; Print
         mov rax, SYS_write
         mov rdi, STDOUT
         mov rsi, r10
-        mov rdx, 3
+        mov rdx, 256
         syscall
 
         ; Exit system call
