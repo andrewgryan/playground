@@ -27,16 +27,23 @@ main:
         mov r9, 0
         mov r8b, 33
 .loop:
-        mov [r10 + r9], byte r8b
+        mov [r10 + r9], byte r8b ; ASCII char
         inc r9
-        mov [r10 + r9], byte 32
-        inc r9
+
         inc r8
         cmp r8, 127
         je .done
+
+        mov [r10 + r9], byte 32 ; Space
+        inc r9
+
         jmp .loop
 
 .done:
+        ; Append newline
+        mov [r10 + r9], byte 0xa ; Newline
+        inc r9
+
         ; Print
         mov rax, SYS_write
         mov rdi, STDOUT
