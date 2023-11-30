@@ -10,14 +10,23 @@ STDOUT = 1
 segment readable executable
 entry main
 main:
-        call print_ascii
+        call get_ascii
+
+        ; Print
+        mov rax, SYS_write
+        mov rdi, STDOUT
+        mov rsi, r10
+        mov rdx, r9
+        syscall
 
         ; Exit system call
         mov rax, SYS_exit
         mov rdi, 0
         syscall
 
-print_ascii:
+
+; Generate ASCII characters
+get_ascii:
         ; Call brk to request memory address space
         mov rax, SYS_brk
         mov rdi, 0
@@ -51,12 +60,5 @@ print_ascii:
         ; Append newline
         mov [r10 + r9], byte 0xa ; Newline
         inc r9
-
-        ; Print
-        mov rax, SYS_write
-        mov rdi, STDOUT
-        mov rsi, r10
-        mov rdx, r9
-        syscall
 
         ret
