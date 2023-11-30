@@ -11,6 +11,8 @@ segment readable executable
 entry main
 main:
         call get_ascii
+        mov r9w, word [rax]
+        lea r10, [rax + 2]
 
         ; Print
         mov rax, SYS_write
@@ -44,21 +46,21 @@ get_ascii:
         mov r9, 0
         mov r8b, 33
 .loop:
-        mov [r10 + r9], byte r8b ; ASCII char
+        mov [r10 + r9 + 2], byte r8b ; ASCII char
         inc r9
 
         inc r8
         cmp r8, 127
         je .done
 
-        mov [r10 + r9], byte 32 ; Space
-        inc r9
-
         jmp .loop
 
 .done:
         ; Append newline
-        mov [r10 + r9], byte 0xa ; Newline
+        mov [r10 + r9 + 2], byte 0xa ; Newline
         inc r9
 
+        ; Return pointer to string
+        mov [rax], r9w  ; word representing length
+        mov rax, r10    ; address of string
         ret
