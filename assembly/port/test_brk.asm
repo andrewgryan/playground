@@ -10,6 +10,14 @@ STDOUT = 1
 segment readable executable
 entry main
 main:
+        call print_ascii
+
+        ; Exit system call
+        mov rax, SYS_exit
+        mov rdi, 0
+        syscall
+
+print_ascii:
         ; Call brk to request memory address space
         mov rax, SYS_brk
         mov rdi, 0
@@ -51,7 +59,4 @@ main:
         mov rdx, r9
         syscall
 
-        ; Exit system call
-        mov rax, SYS_exit
-        mov rdi, 0
-        syscall
+        ret
