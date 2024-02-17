@@ -7,6 +7,11 @@ from pydantic import BaseModel
 LIKES = 0
 
 
+class Post(BaseModel):
+    title: str
+    body: str
+
+
 class Item(BaseModel):
     id: str
 
