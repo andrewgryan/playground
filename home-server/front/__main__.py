@@ -26,3 +26,9 @@ def likes():
     response = requests.get(f"{API_SERVER}/like")
     likes = response.json()["likes"]
     return render_template("likes.html", likes=likes)
+
+
+@app.route("/posts", methods=["POST"])
+def posts():
+    posts = [{"title": "Title", "body": "Body."}]
+    return render_template("posts.html", posts=posts)

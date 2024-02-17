@@ -8,6 +8,12 @@
 @layer reset, component;
 
 @layer reset {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
   body {
     color: white;
     background: var(--surface-1);
@@ -20,12 +26,30 @@
   button {
     border: hidden;
   }
+
+  textarea {
+    background: var(--surface-1);
+    color: var(--text-2);
+    width: 100%;
+    min-height: 40ch;
+    padding-block: 1rem;
+    padding-inline: 0.5rem;
+  }
 }
 
 @layer component {
+  body {
+    max-width: 100ch;
+    margin: auto;
+  }
   h1 {
     font-size: 3rem;
     letter-spacing: 0.15rem;
+  }
+
+  .container {
+    display: grid;
+    gap: 1rem;
   }
 
   button {
