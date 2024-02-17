@@ -9,9 +9,9 @@
   </head>
   <body>
     <div>
-      <h1>Hello, {{name}}!</h1>
-      <div hx-get="/likes" hx-trigger="every 2s"></div>
-      <button hx-post="/like">Like</button>
+      <h1>Blog</h1>
+      <button hx-post="/like" hx-target="#likes">Like</button>
+      <div id="likes" hx-get="/likes" hx-trigger="every 2s"></div>
     </div>
   </body>
 </html>
