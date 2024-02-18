@@ -90,10 +90,45 @@ async def posts(form: Post) -> list[Post]:
     return [Post(title=title, body=body) for (title, body) in rows]
 
 
+@app.post("/post/{id}")
+async def post_update(id: int, form: Post) -> list[Post]:
+    global connection
+    cursor = connection.cursor()
+
+    # Insert post
+    cursor.execute(
+        """INSERT OR REPLACE INTO posts
+                (id, title, body) VALUES (?, ?, ?);
+        """,
+        (id, form.title, form.body),
+    )
+    connection.commit()
+
+    # Return all posts
+    result = cursor.execute("SELECT title, body FROM posts;")
+    rows = result.fetchall()
+    return [Post(title=title, body=body) for (title, body) in rows]
+
+
 @app.get("/posts")
 async def posts_get() -> list[Post]:
     global connection
     cursor = connection.cursor()
     result = cursor.execute("SELECT id, title, body FROM posts;")
+    rows = result.fetchall()
+    return [Post(title=title, body=body, id=id) for (id, title, body) in rows]
+
+
+@app.get("/edit/{id}")
+async def posts_edit(id: int) -> list[Post]:
+    global connection
+    cursor = connection.cursor()
+    result = cursor.execute(
+        """SELECT id, title, body
+           FROM posts
+           WHERE id=?;
+        """,
+        (id,),
+    )
     rows = result.fetchall()
     return [Post(title=title, body=body, id=id) for (id, title, body) in rows]

@@ -37,10 +37,10 @@ def likes():
     return render_template("likes.html", likes=likes)
 
 
-@app.post("/posts")
+@app.post("/post/<id>")
 @validate()
-def posts_post(form: Post):
-    response = requests.post(api("/posts"), json=form.dict())
+def posts_post(id: int, form: Post):
+    response = requests.post(api(f"/post/{id}"), json=form.dict())
     return render_template("posts.html", posts=response.json())
 
 
@@ -48,3 +48,14 @@ def posts_post(form: Post):
 def posts_get():
     response = requests.get(api("/posts"))
     return render_template("posts.html", posts=response.json())
+
+
+@app.get("/edit/<id>")
+def posts_edit(id):
+    response = requests.get(api(f"/edit/{id}"))
+    posts = response.json()
+    if len(posts) == 0:
+        post = Post(title="", body="").dict()
+    else:
+        post = posts[0]
+    return render_template("edit_post.html", post=post)

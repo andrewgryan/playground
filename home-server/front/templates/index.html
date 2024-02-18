@@ -10,21 +10,13 @@
   <body>
     <div class="container">
       <h1>Database</h1>
-
       <div id="posts" hx-get="/posts" hx-trigger="load"></div>
-
-      <form hx-post="/posts" hx-target="#posts">
-      <div class="section">
-        <label for="title">Title</label>
-        <input id="title" name="title" type="text"></input>
-      </div>
-      <div class="section">
-        <label for="title">Body</label>
-        <textarea id="body" name="body"></textarea>
-      </div>
-        <button>Submit</button>
-      </form>
-
+      <div
+        id="edit"
+        hx-get="/edit/0"
+        hx-trigger="load"
+        hx-swap="outerHTML"
+      ></div>
     </div>
   </body>
 </html>

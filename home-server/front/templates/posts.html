@@ -6,7 +6,14 @@
         <header>{{ post.title }}</header>
         <div>{{ post.body }}</div>
       </div>
-      <button id="{{ post.id }}">Edit</button>
+      <button
+        hx-get="/edit/{{ post.id }}"
+        hx-trigger="click"
+        hx-target="#edit"
+        hx-swap="outerHTML"
+      >
+        Edit
+      </button>
     </article>
   </div>
   {% endfor %}
