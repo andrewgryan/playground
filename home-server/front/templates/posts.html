@@ -1,8 +1,13 @@
-<div>
+<div class="posts">
   {% for post in posts %}
   <div>
-    <header>{{ post.title }}</header>
-    <article>{{ post.body }}</article>
+    <article>
+      <div>
+        <header>{{ post.title }}</header>
+        <div>{{ post.body }}</div>
+      </div>
+      <button id="{{ post.id }}">Edit</button>
+    </article>
   </div>
   {% endfor %}
 </div>

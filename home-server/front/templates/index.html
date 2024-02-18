@@ -9,14 +9,22 @@
   </head>
   <body>
     <div class="container">
-      <h1>{{ name }}'s blog</h1>
-      <button hx-post="/like" hx-target="#likes">Like</button>
-      <div id="likes" hx-get="/likes" hx-trigger="every 2s">Likes</div>
+      <h1>Database</h1>
 
-      <form hx-post="/posts">
-        <textarea></textarea>
+      <div id="posts" hx-get="/posts" hx-trigger="load"></div>
+
+      <form hx-post="/posts" hx-target="#posts">
+      <div class="section">
+        <label for="title">Title</label>
+        <input id="title" name="title" type="text"></input>
+      </div>
+      <div class="section">
+        <label for="title">Body</label>
+        <textarea id="body" name="body"></textarea>
+      </div>
         <button>Submit</button>
       </form>
+
     </div>
   </body>
 </html>

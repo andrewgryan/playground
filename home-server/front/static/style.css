@@ -1,8 +1,28 @@
+@import "https://unpkg.com/open-props";
+
 :root {
-  --surface-1: #1f2421;
+  --color-1: #18221f;
+  --color-2: #3d6661;
+  --color-3: #759482;
+  --color-4: #c6b673;
+  --color-5: #eae5c7;
   --surface-2: #dce1de;
-  --text-1: #9cc5a1;
-  --size-2: 0.1rem;
+  --size-1: 0.25rem;
+  --size-2: 0.5rem;
+  --size-3: 1rem;
+  --size-4: 1.25rem;
+  --size-5: 1.5rem;
+  --size-6: 1.75rem;
+  --size-7: 2rem;
+  --size-8: 3rem;
+  --font-letterspacing-0: -0.05em;
+  --font-letterspacing-1: 0.025em;
+  --font-letterspacing-2: 0.05em;
+  --font-letterspacing-3: 0.075em;
+  --font-letterspacing-4: 0.15em;
+  --font-letterspacing-5: 0.5em;
+  --font-letterspacing-6: 0.75em;
+  --font-letterspacing-7: 1em;
 }
 
 @layer reset, component;
@@ -15,25 +35,41 @@
   }
 
   body {
-    color: white;
-    background: var(--surface-1);
+    padding-block-start: var(--size-8);
+    color: var(--gray-3);
+    background: var(--gray-12);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
       Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
       sans-serif;
     height: 100dvh;
   }
 
-  button {
+  h1 {
+    color: var(--jungle-4);
+  }
+
+  button,
+  textarea,
+  input {
     border: hidden;
   }
 
+  form {
+    display: grid;
+    gap: var(--size-1);
+  }
+
   textarea {
-    background: var(--surface-1);
-    color: var(--text-2);
     width: 100%;
-    min-height: 40ch;
-    padding-block: 1rem;
-    padding-inline: 0.5rem;
+    min-height: 10ch;
+  }
+
+  textarea,
+  input[type="text"] {
+    background: var(--gray-10);
+    color: var(--gray-1);
+    padding: var(--size-3);
+    font-size: 1.1em;
   }
 }
 
@@ -41,10 +77,11 @@
   body {
     max-width: 100ch;
     margin: auto;
+    padding-inline: var(--size-3);
   }
   h1 {
     font-size: 3rem;
-    letter-spacing: 0.15rem;
+    letter-spacing: var(--font-letterspacing-1);
   }
 
   .container {
@@ -54,13 +91,12 @@
 
   button {
     width: 100%;
-    letter-spacing: var(--size-2);
+    letter-spacing: var(--font-letterspacing-1);
     text-transform: uppercase;
     font-size: large;
     padding: 0.5rem;
-    color: var(--surface-1);
-
-    background: var(--text-1);
+    color: var(--gray-11);
+    background: var(--jungle-5);
     border-radius: 0.25rem 0.25rem 0.25rem 0;
 
     position: relative;
@@ -85,5 +121,26 @@
     margin: 0;
     opacity: 1;
     transition: 0s;
+  }
+
+  .posts {
+    display: grid;
+    gap: 1rem;
+  }
+
+  article {
+    display: grid;
+    grid-template-columns: 11fr 1fr;
+    gap: 1rem;
+  }
+
+  form {
+    display: grid;
+    gap: 0.5rem;
+    padding-block: 1rem;
+  }
+  .section {
+    display: grid;
+    gap: var(--size-1);
   }
 }
