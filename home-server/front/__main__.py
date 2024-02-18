@@ -1,6 +1,8 @@
 import requests
 from flask import Flask, render_template, url_for
 
+import lib
+
 app = Flask(__name__)
 
 API_SERVER = "http://localhost:8000"
@@ -8,8 +10,9 @@ API_SERVER = "http://localhost:8000"
 
 @app.route("/")
 def index():
-    response = requests.get(f"{API_SERVER}")
-    name = response.json()["id"]
+    # response = requests.get(f"{API_SERVER}")
+    # name = response.json()["id"]
+    name = lib.VALUE
     style_href = url_for("static", filename="style.css")
     return render_template("index.html", name=name, style_href=style_href)
 

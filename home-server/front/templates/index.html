@@ -9,7 +9,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>Blog</h1>
+      <h1>{{ name }}'s blog</h1>
       <button hx-post="/like" hx-target="#likes">Like</button>
       <div id="likes" hx-get="/likes" hx-trigger="every 2s">Likes</div>
 
